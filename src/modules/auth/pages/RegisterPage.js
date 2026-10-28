@@ -1,6 +1,8 @@
 /**
  * RegisterPage - Contenedor de Registro de Usuarios
  */
+import { router } from '@/core/router/router.js';
+
 export const RegisterPage = {
     render() {
         return `
@@ -90,7 +92,7 @@ export const RegisterPage = {
                         feedback.className = 'alert alert-success animate__animated animate__fadeIn py-2 small mb-4';
                         feedback.classList.remove('d-none');
                         
-                        setTimeout(() => window.location.href = '/workspaces', 1500);
+                        setTimeout(() => router.navigate('/workspace'), 1200);
 
                     } catch (error) {
                         feedback.innerHTML = `<span>${error.message}</span>`;

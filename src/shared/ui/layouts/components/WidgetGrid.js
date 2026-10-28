@@ -271,7 +271,7 @@ export const Workspace = {
             });
         }
 
-        // Drag scroll para el carrusel en escritorio
+        // Drag & Touch scroll para el carrusel
         const carousel = document.querySelector('.business-carousel');
         if (carousel) {
             let isDown = false;
@@ -298,13 +298,40 @@ export const Workspace = {
                 const x = e.pageX - carousel.offsetLeft;
                 const walk = (x - startX) * 2;
                 
-                // Si el movimiento es mayor a 10px, marcamos como arrastre
                 if (Math.abs(walk) > 10) {
                     carousel.dataset.isDragging = 'true';
                 }
                 
                 carousel.scrollLeft = scrollLeft - walk;
             });
+
+            // Touch gestures para dispositivos móviles
+            let touchStartX = 0;
+            let touchScrollLeft = 0;
+            carousel.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].pageX - carousel.offsetLeft;
+                    touchScrollLeft = carousel.scrollLeft;
+                }
+            }, { passive: true });
+
+            carousel.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1) {
+                    const x = e.touches[0].pageX - carousel.offsetLeft;
+                    const walk = (x - touchStartX);
+                    if (Math.abs(walk) > 8) {
+                        carousel.dataset.isDragging = 'true';
+                    }
+                }
+            }, { passive: true });
+
+            carousel.addEventListener('touchend', () => {
+                if (carousel.dataset.isDragging === 'true') {
+                    setTimeout(() => {
+                        carousel.dataset.isDragging = 'false';
+                    }, 100);
+                }
+            }, { passive: true });
 
             // Evitar que el clic se dispare si se estaba arrastrando
             carousel.addEventListener('click', (e) => {
@@ -314,6 +341,19 @@ export const Workspace = {
                     carousel.dataset.isDragging = 'false';
                 }
             }, true); // Capture phase para interceptar antes que los botones internos
+        }
+
+        // Atajo de teclado global Ctrl+K / Cmd+K para el buscador del Workspace
+        if (!this._keyShortcutBound) {
+            window.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+                    e.preventDefault();
+                    const wrapper = document.getElementById('ws-search-wrapper');
+                    const isActive = wrapper?.classList.contains('active');
+                    window.toggleWorkspaceSearch(!isActive);
+                }
+            });
+            this._keyShortcutBound = true;
         }
 
         /**

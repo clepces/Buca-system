@@ -85,6 +85,36 @@ export const initUIBridge = () => {
         if (event.target.classList.contains('glass-modal-overlay')) window.closeModal();
     };
 
+    // Manejo global de tecla Escape para accesibilidad e IxD
+    if (!window._modalEscapeBound) {
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const baseModal = document.getElementById('modal-base');
+                if (baseModal?.classList.contains('active')) {
+                    window.closeModal();
+                    return;
+                }
+                const perfModal = document.getElementById('perf-modal-overlay');
+                if (perfModal?.classList.contains('active')) {
+                    PerformanceModal.hide();
+                    return;
+                }
+                const rateModal = document.getElementById('rate-management-modal');
+                if (rateModal?.classList.contains('active')) {
+                    RateModal.hide();
+                    return;
+                }
+                const anyOverlay = document.querySelector('.glass-modal-overlay.active, .modal-overlay');
+                if (anyOverlay) {
+                    anyOverlay.classList.remove('active');
+                    anyOverlay.remove?.();
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+        window._modalEscapeBound = true;
+    }
+
     window.openRateModal = () => RateModal.show();
     window.openTerminal = () => window.openModal('Terminal Buca');
     window.openSettings = () => window.openModal('Configuraciones del Sistema');

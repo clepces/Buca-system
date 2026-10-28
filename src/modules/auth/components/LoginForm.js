@@ -90,7 +90,13 @@ export const LoginForm = {
                             if (result.error === 'auth/user-not-found' || result.error === 'auth/wrong-password' || result.error === 'auth/invalid-credential') {
                                 errorMsg = 'Usuario o contraseña incorrectos.';
                             } else if (result.error === 'auth/too-many-requests') {
-                                errorMsg = 'Demasiados intentos. Intente más tarde.';
+                                errorMsg = 'Demasiados intentos fallidos. Intente más tarde.';
+                            } else if (result.error === 'auth/network-request-failed') {
+                                errorMsg = 'Error de conexión con el servidor. Verifique su red.';
+                            } else if (result.error === 'auth/user-disabled') {
+                                errorMsg = 'Esta cuenta corporativa ha sido inhabilitada.';
+                            } else if (result.error === 'auth/invalid-email') {
+                                errorMsg = 'El formato del correo corporativo no es válido.';
                             }
                             throw new Error(errorMsg);
                         }
