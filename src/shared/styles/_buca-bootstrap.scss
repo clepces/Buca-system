@@ -39,11 +39,11 @@ $font-family-sans-serif: 'Inter', system-ui, -apple-system, "Segoe UI", roboto, 
 .buca-card {
     @extend .card;
     
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-glass);
     background: var(--surface-solid);
     border-radius: var(--ui-capsule-radius);
     
     [data-theme="dark"] & {
-        border-color: rgba(255, 255, 255, 0.1);
+        border-color: var(--border-glass);
     }
 }

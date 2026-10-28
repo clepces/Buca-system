@@ -48,7 +48,7 @@ class EmulatorModal {
     _createDOM() {
         this.overlay = document.createElement('div');
         this.overlay.className = 'glass-modal-overlay';
-        this.overlay.style.zIndex = '20000'; // Prioridad máxima
+        this.overlay.style.zIndex = '3100';
 
         this.overlay.innerHTML = `
             <div class="glass-modal" style="max-width: 450px;">
@@ -60,25 +60,25 @@ class EmulatorModal {
                         </h3>
                         <span class="modal-subtitle">Seguridad de Desarrollo</span>
                     </div>
-                    <button class="modal-close-btn" id="emu-close-x">
+                    <button class="modal-close-btn" id="emu-close-x" aria-label="Cerrar modal">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0">
+                    <p class="mb-0 text-main">
                         Se ha detectado que <strong>BUCA ERP</strong> está operando en un entorno local con 
                         <strong>Firebase Emulators</strong>. 
                     </p>
-                    <div class="alert-glass-warning mt-3" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px; border-radius: 12px; font-size: 0.85rem; color: var(--text-main);">
-                        <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
-                        No utilice credenciales de producción. Los datos son volátiles y locales.
+                    <div class="alert alert-warning bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-3 mt-3 p-3 small text-main d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-2 fs-5"></i>
+                        <span>No utilice credenciales de producción. Los datos son volátiles y locales.</span>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-glass" id="emu-cancel-btn" style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-glass); background: transparent; color: var(--text-main); cursor: pointer;">
+                    <button class="btn btn-ghost" id="emu-cancel-btn">
                         Ignorar
                     </button>
-                    <button class="btn-glass primary" id="emu-ok-btn" style="padding: 8px 24px; border-radius: 8px; background: var(--buca-blue); color: white; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px var(--buca-blue-glow);">
+                    <button class="btn btn-primary px-4" id="emu-ok-btn">
                         Entendido, no mostrar más
                     </button>
                 </div>

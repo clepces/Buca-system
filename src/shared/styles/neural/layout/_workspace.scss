@@ -204,8 +204,8 @@
         font-size: 0.82rem;
         font-weight: 600;
         cursor: pointer;
-        -webkit-backdrop-filter: blur(10px);
-        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(var(--blur-intensity, 10px));
+        backdrop-filter: blur(var(--blur-intensity, 10px));
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         align-items: center;
@@ -267,8 +267,8 @@
     overflow: hidden;
     transition: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(var(--blur-intensity, 10px));
+    backdrop-filter: blur(var(--blur-intensity, 10px));
 
     &:hover:not(.active) {
         border-color: var(--buca-blue);

@@ -12,8 +12,8 @@
     right: 0;
     width: 250px;
     background: var(--surface-glass);
-    -webkit-backdrop-filter: blur(24px);
-    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(var(--blur-intensity, 24px));
+    backdrop-filter: blur(var(--blur-intensity, 24px));
     border: 1px solid var(--border-highlight);
     border-radius: 16px;
     box-shadow: 0 15px 35px var(--shadow-glass);
