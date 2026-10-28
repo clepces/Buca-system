@@ -6,6 +6,7 @@ export class GhostSanitizer {
     constructor(engine) {
         this.engine = engine;
         this.interval = null;
+        this._boundSanitize = null;
     }
 
     start() {
@@ -15,12 +16,15 @@ export class GhostSanitizer {
     }
 
     sanitize() {
-        if (this.engine.isPaused) return;
+        if (this.engine.isPaused || document.hidden) return;
 
         if ('requestIdleCallback' in window) {
-            requestIdleCallback(this.#performSanitize.bind(this));
+            if (!this._boundSanitize) {
+                this._boundSanitize = () => this.#performSanitize();
+            }
+            requestIdleCallback(this._boundSanitize);
         } else {
-            setTimeout(this.#performSanitize.bind(this), 100);
+            setTimeout(() => this.#performSanitize(), 100);
         }
     }
 
@@ -40,6 +44,9 @@ export class GhostSanitizer {
     }
 
     stop() {
-        if (this.interval) clearInterval(this.interval);
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
     }
 }

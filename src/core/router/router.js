@@ -13,6 +13,7 @@ class Router {
         this.routes = [];
         this.currentPath = window.location.pathname;
         this.prevPath = null;
+        this.currentRoute = null;
         
         // Escuchar el evento de navegación del navegador (atrás/adelante)
         window.onpopstate = () => this.handleRouteChange();
@@ -166,6 +167,20 @@ class Router {
 
             void contentSlot.offsetWidth; // Force reflow
             
+            // Desmontar vista previa si implementa destroy/unmount
+            if (this.currentRoute?.component) {
+                try {
+                    if (typeof this.currentRoute.component.destroy === 'function') {
+                        this.currentRoute.component.destroy();
+                    } else if (typeof this.currentRoute.component.unmount === 'function') {
+                        this.currentRoute.component.unmount();
+                    }
+                } catch (err) {
+                    console.error('[Router] Error al desmontar vista previa:', err);
+                }
+            }
+            this.currentRoute = route;
+
             // Inyectar el componente
             if (route.component && typeof route.component.render === 'function') {
                 contentSlot.innerHTML = route.component.render();

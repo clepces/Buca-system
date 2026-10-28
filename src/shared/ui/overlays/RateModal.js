@@ -35,6 +35,10 @@ export const RateModal = {
             modal.classList.remove('active');
             setTimeout(() => modal.remove(), 400); // Wait for animation then clean up
         }
+        if (this._dropdownCloseHandler) {
+            document.removeEventListener('click', this._dropdownCloseHandler);
+            this._dropdownCloseHandler = null;
+        }
         document.body.style.overflow = '';
     },
 
@@ -243,9 +247,10 @@ export const RateModal = {
                 menu.classList.toggle('active');
             };
 
-            document.addEventListener('click', (e) => {
+            this._dropdownCloseHandler = (e) => {
                 if (!trigger.contains(e.target)) menu.classList.remove('active');
-            });
+            };
+            document.addEventListener('click', this._dropdownCloseHandler);
         }
 
         if (dropSync) dropSync.onclick = () => this._syncWithAPI(true);

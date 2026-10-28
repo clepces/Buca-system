@@ -51,6 +51,10 @@ class PerformanceModal {
             this.overlay.classList.remove('active');
             this.stopTelemetry();
             this.removeEngineListeners();
+            if (this._notifyTimeout) {
+                clearTimeout(this._notifyTimeout);
+                this._notifyTimeout = null;
+            }
             document.body.style.overflow = '';
         }
     }

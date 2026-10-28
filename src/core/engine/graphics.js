@@ -90,6 +90,9 @@ export class GraphicsEngine {
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType === 1) this.observeNewNodes(node);
                 }
+                for (const node of mutation.removedNodes) {
+                    if (node.nodeType === 1) this.unobserveRemovedNodes(node);
+                }
             }
         });
 
@@ -112,6 +115,20 @@ export class GraphicsEngine {
     /**
      * Escaneo inicial del DOM.
      */
+    unobserveRemovedNodes(root) {
+        const selector = '[data-buca-asset], [data-perf-src], [data-src-default]';
+        if (root.matches && root.matches(selector)) {
+            this.activeElements.delete(root);
+            this.intersectionObserver?.unobserve(root);
+        }
+        if (root.querySelectorAll) {
+            root.querySelectorAll(selector).forEach(el => {
+                this.activeElements.delete(el);
+                this.intersectionObserver?.unobserve(el);
+            });
+        }
+    }
+
     scan() {
         const selector = '[data-buca-asset], [data-perf-src], [data-src-default]';
         document.querySelectorAll(selector).forEach(el => {

@@ -268,6 +268,9 @@ class BucaKernel {
      * Implementa el sistema de "Acciones Dinámicas" via data-attributes.
      */
     setupEventListeners() {
+        if (this._eventsSetup) return;
+        this._eventsSetup = true;
+
         // Delegación Global de Clics
         document.addEventListener('click', (e) => {
             const actionEl = e.target.closest('[data-action]');

@@ -5,6 +5,7 @@ export class FPSMonitor {
         this.lastFrameTime = performance.now();
         this.isRunning = false;
         this._boundCheck = this.check.bind(this);
+        this._rafId = null;
     }
 
     start() {
@@ -12,16 +13,22 @@ export class FPSMonitor {
         this.isRunning = true;
         this.lastFrameTime = performance.now();
         this.frameWeights = [];
-        requestAnimationFrame(this._boundCheck);
+        this._rafId = requestAnimationFrame(this._boundCheck);
     }
 
     stop() {
         this.isRunning = false;
+        if (this._rafId) {
+            cancelAnimationFrame(this._rafId);
+            this._rafId = null;
+        }
     }
 
     check() {
-        if (!this.isRunning || this.engine.isPaused || this.engine.isCalibrating) {
-            if (this.isRunning) requestAnimationFrame(this._boundCheck);
+        if (!this.isRunning) return;
+
+        if (this.engine.isPaused || this.engine.isCalibrating) {
+            this._rafId = requestAnimationFrame(this._boundCheck);
             return;
         }
 
@@ -44,6 +51,6 @@ export class FPSMonitor {
             window.dispatchEvent(new CustomEvent('buca:perf_critical'));
         }
 
-        requestAnimationFrame(this._boundCheck);
+        this._rafId = requestAnimationFrame(this._boundCheck);
     }
 }

@@ -11,6 +11,8 @@ class HUDFeedbackManager {
         this.toastQueue = [];
         this.isProcessing = false;
         this.container = null;
+        this._boundNotification = null;
+        this._boundLegacy = null;
         this.init();
     }
 
@@ -22,15 +24,13 @@ class HUDFeedbackManager {
             this.setupContainer();
         }
 
-        // BNE Event
-        window.addEventListener('buca:notification', (e) => {
-            this.pushFeedback(e.detail);
-        });
+        // BNE Event — cachear referencia para poder desubscribir
+        this._boundNotification = (e) => this.pushFeedback(e.detail);
+        window.addEventListener('buca:notification', this._boundNotification);
         
         // Legacy Modular Event (Bridge)
-        window.addEventListener('UI:NOTIFICATION_PUSH', (e) => {
-            this.pushFeedback(e.detail);
-        });
+        this._boundLegacy = (e) => this.pushFeedback(e.detail);
+        window.addEventListener('UI:NOTIFICATION_PUSH', this._boundLegacy);
     }
 
     setupContainer() {
@@ -129,6 +129,22 @@ class HUDFeedbackManager {
         case 'error': return '<i class="bi bi-x-octagon"></i>';
         default: return '<i class="bi bi-info-circle"></i>';
         }
+    }
+
+    /**
+     * Libera recursos: remueve listeners globales y vacía la cola de toasts.
+     */
+    destroy() {
+        if (this._boundNotification) {
+            window.removeEventListener('buca:notification', this._boundNotification);
+            this._boundNotification = null;
+        }
+        if (this._boundLegacy) {
+            window.removeEventListener('UI:NOTIFICATION_PUSH', this._boundLegacy);
+            this._boundLegacy = null;
+        }
+        this.toastQueue = [];
+        this.isProcessing = false;
     }
 }
 
