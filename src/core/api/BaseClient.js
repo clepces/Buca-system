@@ -29,7 +29,16 @@ export class BaseClient {
      */
     async request(endpoint, options = {}) {
         const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), this.timeout);
+        const timeoutMs = options.timeout || this.timeout;
+        const id = setTimeout(() => controller.abort(), timeoutMs);
+
+        if (options.signal) {
+            if (options.signal.aborted) {
+                controller.abort();
+            } else {
+                options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+            }
+        }
 
         // 1. Aplicar Interceptores de Petición (Inyección de Tokens, etc)
         let config = {

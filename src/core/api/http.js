@@ -11,20 +11,32 @@ export class HttpClient {
 
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
+        const controller = new AbortController();
+        const timeoutMs = options.timeout || 10000;
+        const id = setTimeout(() => controller.abort(), timeoutMs);
+
+        if (options.signal) {
+            if (options.signal.aborted) controller.abort();
+            else options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+        }
+
         const defaultOptions = {
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers
-            }
+            },
+            signal: controller.signal
         };
 
         try {
-            const response = await fetch(url, { ...defaultOptions, ...options });
+            const response = await fetch(url, { ...defaultOptions, ...options, signal: controller.signal });
+            clearTimeout(id);
             if (!response.ok) {
                 throw new Error(`HTTP Error: ${response.status}`);
             }
             return await response.json();
         } catch (error) {
+            clearTimeout(id);
             console.error(`[HttpClient] Request failed: ${url}`, error);
             throw error;
         }

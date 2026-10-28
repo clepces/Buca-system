@@ -173,7 +173,7 @@ export class GraphicsEngine {
      */
     #initTelemetrySync() {
         this._stateSyncInterval = setInterval(() => {
-            if (this.isPaused) return;
+            if (this.isPaused || document.hidden) return;
             
             const stats = this.getCurrentStats();
             uiState.updateGraphics({
@@ -186,7 +186,7 @@ export class GraphicsEngine {
                 isManualMode: this.isManualMode,
                 profile: this.profile
             });
-        }, 300);
+        }, 1000);
     }
 
     #handleResize() {
