@@ -1,0 +1,424 @@
+/* =========================================================================
+   LAYOUT: HEADER (AppBar & Branding)
+   Sistema unificado: un solo header-right para todas las pantallas.
+   Responsividad via clases .hide-mobile / .hide-sm / .hide-xs
+   ========================================================================= */
+
+@use "../abstracts" as *;
+
+/* ─────────────────────────────────────────────────────────
+   CENTER ZONE & GREETING
+   ───────────────────────────────────────────────────────── */
+.header-center-zone {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    min-width: 0; /* Corrección: Previene que el contenido empuje el header-right */
+    pointer-events: none; /* No obstruir clics en elementos de fondo */
+
+    @media screen and (max-width: 1200px) {
+        display: none;
+    }
+}
+
+.layout-greeting {
+    pointer-events: auto;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    padding: 6px 20px;
+    border-radius: 100px;
+    border: 1px solid var(--border-glass-bright);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slide-down-fade 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+
+    .greeting-text {
+        font-size: 0.85rem;
+        font-family: 'Outfit', sans-serif;
+        color: var(--text-muted);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        strong {
+            color: var(--buca-blue);
+            font-weight: 800;
+        }
+    }
+}
+
+@keyframes slide-down-fade {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   HEADER ACTIONS CAPSULE (Refined)
+   ───────────────────────────────────────────────────────── */
+.header-actions-capsule {
+    display: flex;
+    align-items: center;
+    background: var(--surface-glass);
+    border: 1px solid var(--border-glass-bright);
+    padding: 4px 8px;
+    border-radius: 100px;
+    gap: 4px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: var(--surface-glass-bright);
+        border-color: var(--buca-blue);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.1);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   LAYOUT HEADER CONTAINER (Stacking System)
+   ───────────────────────────────────────────────────────── */
+.layout-header-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: z('header');
+    display: flex;
+    flex-direction: column;
+    pointer-events: none; /* Dejar pasar clics a lo que no sea contenido */
+    padding: var(--ui-floating-margin);
+    gap: var(--ui-floating-margin);
+
+    & > * {
+        pointer-events: auto; /* Reactivar clics para los hijos (Ticker/Header) */
+        
+        &:empty {
+            display: none;
+        }
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   BASE HEADER (Floating Capsule Design)
+   ───────────────────────────────────────────────────────── */
+.app-header {
+    display: flex;
+    align-items: center;
+    height: var(--topbar-height);
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    position: relative;
+    z-index: z('header');
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    
+    // Estética "Glass Bubble"
+    background: var(--surface-glass);
+    -webkit-backdrop-filter: blur(var(--ui-glass-blur));
+    backdrop-filter: blur(var(--ui-glass-blur));
+    border: 1px solid var(--border-glass-bright);
+    border-radius: var(--ui-capsule-radius);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    padding: 0 15px;
+
+    @media screen and (max-height: 800px) {
+        padding: 0 10px;
+    }
+
+    .container-max {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        padding: 0; /* Ya tenemos padding en la cápsula */
+    }
+
+    &:hover {
+        background: var(--surface-glass-bright);
+        border-color: var(--buca-blue);
+        box-shadow: 0 15px 50px rgba(37, 99, 235, 0.12);
+    }
+}
+
+.app-header.no-border {
+    border-bottom: none !important;
+}
+
+.header-left,
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: clamp(4px, 1.2vw, 16px);
+}
+
+/* header-right SIEMPRE visible — control via .hide-* en hijos */
+.header-right {
+    display: flex !important;
+}
+
+.header-separator {
+    width: 1px;
+    height: 20px;
+    background: var(--border-glass);
+    margin: 0 2px;
+}
+
+/* ─────────────────────────────────────────────────────────
+   BRANDING
+   ───────────────────────────────────────────────────────── */
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+
+    .logo-img {
+        width: clamp(22px, 3vw, 36px);
+        height: auto;
+        filter: drop-shadow(0 4px 10px rgba(37, 99, 235, 0.25));
+
+        @media screen and (max-height: 800px) {
+            width: 28px;
+        }
+    }
+
+    .brand-text-group {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .brand-title {
+        font-size: clamp(0.9rem, 2vw, 1.2rem);
+        font-weight: 800;
+        color: var(--buca-blue);
+        line-height: 1;
+        letter-spacing: -0.5px;
+        font-family: 'Outfit', sans-serif;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        @media screen and (max-width: 360px) {
+            display: none;
+        }
+    }
+
+    .brand-subtitle {
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        margin-top: 2px;
+    }
+}
+
+/* Overlay inteligente para búsqueda - Removido (Ahora en Workspace) */
+
+/* ─────────────────────────────────────────────────────────
+   SISTEMA DE CLASES RESPONSIVE UNIFICADO
+   Estas clases controlan visibilidad por breakpoint.
+   Se usan directamente en el HTML del header.
+   ───────────────────────────────────────────────────────── */
+
+/* Oculto en ≤767px — visible en 768px+ */
+.hide-mobile {
+    @media screen and (max-width: 767px) {
+        display: none !important;
+    }
+}
+
+/* Oculto en ≤900px — visible en 901px+ */
+.hide-sm {
+    @media screen and (max-width: 900px) {
+        display: none !important;
+    }
+}
+
+/* Oculto en ≤480px — visible en 481px+ */
+.hide-xs {
+    @media screen and (max-width: 480px) {
+        display: none !important;
+    }
+}
+
+/* Solo visible en mobile ≤767px */
+.show-mobile-only {
+    display: none !important;
+
+    @media screen and (max-width: 767px) {
+        display: flex !important;
+    }
+}
+
+/* Oculto en pantallas grandes >1024px */
+.hide-desktop {
+    @media screen and (min-width: 1025px) {
+        display: none !important;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   DESKTOP-ONLY (mantener para compatibilidad con otros módulos)
+   ───────────────────────────────────────────────────────── */
+.desktop-only {
+    display: none !important;
+
+    @include tablet-v {
+        // CORRECCIÓN: flex para elementos que son hijos de flex-container
+        display: flex !important;
+    }
+
+    // Si el elemento es un span/text, usar inline-flex
+    &.is-inline {
+        @include tablet-v {
+            display: inline-flex !important;
+        }
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   CAPSULA DE ACCIONES DEL HEADER (header-actions-capsule)
+   Ajustes de tamaño según pantalla
+   ───────────────────────────────────────────────────────── */
+@media screen and (max-width: 767px) {
+    .header-actions-capsule {
+        padding: 3px 6px;
+        gap: 2px;
+    }
+
+    .action-pill-btn {
+        padding: 5px;
+        font-size: 1rem;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   NOTIFICATION DOT — Posición relativa al botón padre
+   ───────────────────────────────────────────────────────── */
+.notification-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background: var(--color-error);
+    border-radius: 50%;
+    border: 2px solid var(--bg-primary);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* El botón de la cápsula necesita position: relative para anclar el dot */
+.action-pill-btn {
+    position: relative;
+}
+
+/* ─────────────────────────────────────────────────────────
+   LANG FLAG — Emoji fallback cross-browser
+   ───────────────────────────────────────────────────────── */
+.lang-flag,
+.lang-flag-sm {
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji',
+                 'Twemoji Mozilla', 'EmojiOne Color', sans-serif;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: inline-block;
+    /* Forzar renderizado como emoji en todos los browsers */
+    font-style: normal;
+}
+
+.lang-flag-sm {
+    font-size: 1rem;
+}
+
+/* ─────────────────────────────────────────────────────────
+   BREAKPOINTS DE CONTRACCIÓN (768–1100px)
+   ───────────────────────────────────────────────────────── */
+@media screen and (max-width: 1100px) {
+    .app-header {
+        padding: 0 12px;
+    }
+
+    .header-left, .header-right {
+        gap: 6px;
+    }
+
+    /* brand-subtitle oculto en ≤1100 */
+    .brand-subtitle {
+        display: none;
+    }
+
+    /* En pantallas pequeñas, ocultar el badge de Tasa BCV para liberar espacio */
+    .header-item {
+        display: none !important;
+    }
+
+    /* Reducir gap de identidad */
+    .brand-logo {
+        gap: 4px;
+    }
+
+    .app-header {
+        padding: 0 8px;
+    }
+}
+
+@media screen and (max-width: 360px) {
+    .header-left, .header-right {
+        gap: 4px;
+    }
+    
+    .brand-logo .logo-img {
+        width: 24px;
+    }
+}
+
+/* En ≤900px: también ocultar pill-content del idioma */
+@media screen and (max-width: 900px) {
+    /* El pill de idioma muestra solo la bandera */
+    #dw-panel-language .pill-content {
+        display: none;
+    }
+}
+/* Firebase Emulator Warning Refinement */
+.firebase-emulator-warning {
+    position: fixed !important;
+    bottom: 80px !important; /* Por encima del Dock */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: rgba(15, 23, 42, 0.8) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+    padding: 8px 16px !important;
+    border-radius: 100px !important;
+    font-size: 11px !important;
+    z-index: 9999 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    pointer-events: none !important;
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+
+    &:hover {
+        opacity: 1;
+    }
+}

@@ -1,0 +1,58 @@
+/* =========================================================================
+   BASE: RESPONSIVE (Global Overrides for Ultra-Wide Screens)
+   ========================================================================= */
+
+@use "../abstracts" as *;
+
+/* 4K / Ultra-Wide Displays */
+@media screen and (min-width: 1920px) {
+    html {
+        font-size: 18px;
+    }
+
+    .app-header {
+        padding: 0 40px;
+
+        --header-height: 78px; /* Ultra-wide: header ligeramente más alto */
+
+        height: var(--header-height);
+    }
+
+    .dock-container {
+        bottom: 40px;
+    }
+
+    .dock {
+        max-width: 60vw;
+        gap: 12px;
+    }
+
+    .dock-item {
+        font-size: 15px;
+        padding: 12px 18px;
+    }
+
+    .btn-ai, .btn-add {
+        width: 44px;
+        height: 44px;
+        svg {
+            width: 22px;
+            height: 22px;
+        }
+    }
+}
+
+/* Landscape Mobile / Low Height Fixes */
+@media screen and (max-height: 480px) {
+    .workspace-area {
+        padding-bottom: 0;
+    }
+
+    .workspace-internal {
+        padding-bottom: 80px;
+    }
+
+    .dock-container {
+        bottom: 5px;
+    }
+}

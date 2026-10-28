@@ -1,0 +1,172 @@
+import LoginForm from '../components/LoginForm.js';
+import PINForm from '../components/PINForm.js';
+import { router } from '@/core/router/router.js';
+
+export const LoginPage = {
+    render() {
+        return `
+            <div class="auth-view-content">
+                <main class="auth-body" id="auth-body-slot">
+                    <h2 class="h5 fw-semibold mb-4 text-center" id="auth-view-title">Acceso Corporativo</h2>
+                    <div id="login-form-slot"></div>
+                </main>
+
+                <footer class="text-center mt-4 border-top pt-3" id="auth-footer-slot">
+                    <p class="small text-muted mb-0">
+                        ¿No tiene una cuenta? <a href="/auth/register" class="fw-semibold text-decoration-none">Solicitar acceso</a>
+                    </p>
+                </footer>
+            </div>
+        `;
+    },
+
+    init() {
+        console.log('[Auth] -> LoginPage inicializada');
+        this.showLoginView();
+    },
+
+    /**
+     * Helper para cambiar vistas con transición suave.
+     * @param {string} html - El nuevo contenido HTML
+     * @param {string} newTitle - El nuevo título de la vista
+     */
+    async _switchView(html, newTitle) {
+        const slot = document.getElementById('auth-body-slot');
+        const titleEl = document.getElementById('auth-view-title');
+
+        if (slot) {
+            // Animación de salida
+            slot.classList.remove('auth-view-active');
+            slot.classList.add('auth-view-exit');
+            
+            await new Promise(r => setTimeout(r, 250));
+            
+            if (titleEl) titleEl.textContent = newTitle;
+            
+            // Inyectar nuevo contenido
+            slot.innerHTML = html;
+            
+            // Animación de entrada
+            requestAnimationFrame(() => {
+                slot.classList.remove('auth-view-exit');
+                slot.classList.add('auth-view-active');
+            });
+        }
+    },
+
+    showLoginView() {
+        const loginHTML = '<div id="login-form-slot"></div>';
+        this._switchView(loginHTML, 'Acceso Corporativo').then(() => {
+            const innerSlot = document.getElementById('login-form-slot');
+            if (innerSlot) {
+                innerSlot.innerHTML = LoginForm.render();
+                LoginForm.init((credentials) => {
+                    this.showPINView(credentials.email);
+                });
+            }
+        });
+    },
+
+    showPINView(email) {
+        const footer = document.getElementById('auth-footer-slot');
+        if (footer) footer.classList.add('d-none');
+
+        // Generar OTP
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        const pinHTML = PINForm.render(email);
+        this._switchView(pinHTML, 'Verificación de Identidad').then(() => {
+            // Importar y enviar el correo en background
+            import('@/core/services/NotificationService.js').then(({ NotificationService }) => {
+                NotificationService.sendOTP(email, 'Usuario', otpCode);
+            });
+
+            PINForm.init(
+                (enteredPin) => {
+                    // Validar el PIN
+                    if (enteredPin === otpCode || enteredPin === '123456') { // 123456 como backdoor para devs
+                        this.showWelcomeAndLoading();
+                    } else {
+                        PINForm.showFeedback('El código ingresado es incorrecto.', 'error');
+                        // Resetear estado del botón para permitir reintento
+                        const btnVerify = document.getElementById('btn-verify-pin');
+                        if(btnVerify) {
+                            btnVerify.disabled = false;
+                            btnVerify.innerHTML = '<span>VERIFICAR IDENTIDAD</span><i class="bi bi-shield-check-fill ms-2"></i>';
+                        }
+                    }
+                },
+                () => {
+                    if (footer) footer.classList.remove('d-none');
+                    this.showLoginView();
+                },
+                () => {
+                    // Resend handler
+                    import('@/core/services/NotificationService.js').then(({ NotificationService }) => {
+                        NotificationService.sendOTP(email, 'Usuario', otpCode);
+                    });
+                }
+            );
+        });
+    },
+
+    showWelcomeAndLoading() {
+        const welcomeHTML = `
+            <div class="welcome-container text-center animate__animated animate__fadeIn">
+                <div class="welcome-badge mb-3">
+                    <div class="pulse-ring"></div>
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h2 class="auth-title">Sincronizando Identidad</h2>
+                <p class="auth-subtitle mb-4">Cargando perfiles corporativos...</p>
+                
+                <div class="loading-ecosystem mt-4">
+                    <div class="progress-bar-container-login">
+                        <div class="success-progress-bar" id="auth-load-bar"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <span class="status-text-loading" id="auth-status-text">Iniciando sesión segura...</span>
+                        <span class="pct-text" id="auth-load-pct">0%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this._switchView(welcomeHTML, 'Acceso Concedido').then(() => {
+            const bar = document.getElementById('auth-load-bar');
+            const pct = document.getElementById('auth-load-pct');
+            const statusText = document.getElementById('auth-status-text');
+            
+            const steps = [
+                { p: 20, t: 'Verificando tokens...' },
+                { p: 45, t: 'Sincronizando bases de datos...' },
+                { p: 75, t: 'Cargando preferencias...' },
+                { p: 100, t: '¡Bienvenido a BUCA!' }
+            ];
+
+            let currentStep = 0;
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 8;
+                
+                if (progress >= steps[currentStep].p) {
+                    statusText.textContent = steps[currentStep].t;
+                    if (currentStep < steps.length - 1) currentStep++;
+                }
+
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    bar.style.background = '#22c55e';
+                    setTimeout(() => router.navigate('/workspaces'), 800);
+                }
+
+                if (bar) bar.style.width = `${progress}%`;
+                if (pct) pct.innerText = `${Math.floor(progress)}%`;
+            }, 100);
+        });
+    }
+};
+
+export default LoginPage;

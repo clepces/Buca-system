@@ -1,0 +1,103 @@
+/* =========================================================================
+   COMPONENTS: BADGES (Glass Style)
+   ========================================================================= */
+
+@use "../abstracts" as *;
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    background: var(--surface-glass);
+    color: var(--text-main);
+    transition: all 0.2s ease;
+
+    i { margin-right: 4px; }
+
+    /* Performance Tiers */
+    &--eco {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+    
+    &--balanced {
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--buca-blue);
+        border-color: rgba(37, 99, 235, 0.2);
+    }
+    
+    &--pro {
+        background: rgba(139, 92, 246, 0.1);
+        color: var(--color-accent);
+        border-color: rgba(139, 92, 246, 0.2);
+    }
+    
+    &--ultra {
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--color-error);
+        border-color: rgba(244, 63, 94, 0.2);
+        box-shadow: 0 0 10px rgba(244, 63, 94, 0.15);
+    }
+
+    /* Business Status */
+    &--active {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--color-success);
+    }
+    
+    &--warning {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--color-warning);
+    }
+
+    &--enterprise {
+        background: linear-gradient(135deg, var(--buca-blue) 0%, var(--buca-blue-dark) 100%);
+        color: white;
+        border: none;
+        padding: 4px 12px;
+    }
+}
+
+/* Guard Status Badges */
+.badge-guard {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.15);
+    color: var(--text-muted, #6c757d);
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    cursor: default;
+
+    i { margin-right: 4px; font-size: 0.7rem; }
+
+    &.active {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+    
+    &.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: #d97706;
+        border-color: rgba(245, 158, 11, 0.2);
+    }
+    
+    &.danger {
+        background: rgba(244, 63, 94, 0.1);
+        color: #f43f5e;
+        border-color: rgba(244, 63, 94, 0.2);
+        box-shadow: 0 0 10px rgba(244, 63, 94, 0.15);
+    }
+}
+

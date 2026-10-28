@@ -1,0 +1,123 @@
+/**
+ * LoginForm - Componente de Entrada de Credenciales
+ */
+export const LoginForm = {
+    render() {
+        return `
+            <form id="login-form" class="glass-form">
+                <!-- Área de Feedback Dinámico -->
+                <div id="login-feedback" class="alert alert-danger d-none animate__animated animate__fadeIn py-2 small mb-4"></div>
+
+                <div class="mb-3 form-group">
+                    <label class="form-label small fw-bold text-uppercase opacity-75">Correo Corporativo</label>
+                    <div class="input-wrapper">
+                        <i class="bi bi-envelope"></i>
+                        <input type="email" id="email" name="email" 
+                               placeholder="elexdy.publice@gmail.com" 
+                               value="elexdy.publice@gmail.com"
+                               class="glass-input" required>
+                    </div>
+                </div>
+
+                <div class="mb-3 form-group">
+                    <label class="form-label small fw-bold text-uppercase opacity-75">Contraseña</label>
+                    <div class="input-wrapper">
+                        <i class="bi bi-lock"></i>
+                        <input type="password" id="password" name="password" 
+                               placeholder="••••••••" 
+                               value="123456"
+                               class="glass-input" required>
+                        <button class="btn-toggle-password" type="button" id="toggle-password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4 px-2 form-options">
+                    <label class="checkbox-container">
+                        <input type="checkbox" name="remember" id="remember">
+                        <div class="checkmark"></div>
+                        Recordarme
+                    </label>
+                    <a href="/auth/recovery" class="forgot-link">¿Olvidó su contraseña?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="btn-login-submit">
+                    <span class="btn-text">ACCEDER AL PORTAL</span>
+                    <i class="bi bi-arrow-right-short ms-2"></i>
+                </button>
+            </form>
+        `;
+    },
+
+    init(onSubmit) {
+        // Carga dinámica del AuthService para no inflar el bundle inicial si no se usa
+        import('../services/AuthService.js').then(({ AuthService }) => {
+            const form = document.getElementById('login-form');
+            const togglePwd = document.getElementById('toggle-password');
+            const pwdInput = document.getElementById('password');
+            const btnSubmit = document.getElementById('btn-login-submit');
+
+            // Toggle Password Visibility
+            if (togglePwd && pwdInput) {
+                togglePwd.onclick = () => {
+                    const isPassword = pwdInput.type === 'password';
+                    pwdInput.type = isPassword ? 'text' : 'password';
+                    togglePwd.innerHTML = `<i class="bi bi-eye${isPassword ? '-slash' : ''}"></i>`;
+                };
+            }
+
+            // Form Submission
+            if (form) {
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('email').value;
+                    const password = pwdInput.value;
+                    const remember = document.getElementById('remember').checked;
+
+                    // Estado de carga
+                    btnSubmit.disabled = true;
+                    btnSubmit.innerHTML = '<span>VERIFICANDO...</span> <i class="bi bi-arrow-repeat spin"></i>';
+                    this.hideFeedback();
+
+                    try {
+                        const result = await AuthService.login(email, password);
+                        
+                        if (!result.success) {
+                            let errorMsg = 'Credenciales inválidas. Verifique sus datos.';
+                            if (result.error === 'auth/user-not-found' || result.error === 'auth/wrong-password' || result.error === 'auth/invalid-credential') {
+                                errorMsg = 'Usuario o contraseña incorrectos.';
+                            } else if (result.error === 'auth/too-many-requests') {
+                                errorMsg = 'Demasiados intentos. Intente más tarde.';
+                            }
+                            throw new Error(errorMsg);
+                        }
+
+                        this.showFeedback('Acceso Aprobado. Iniciando verificación...', 'success');
+                        setTimeout(() => onSubmit({ email, password, remember }), 800);
+
+                    } catch (error) {
+                        this.showFeedback(error.message, 'error');
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '<span class="btn-text">ACCEDER AL PORTAL</span> <i class="bi bi-arrow-right-short"></i>';
+                    }
+                };
+            }
+        });
+    },
+
+    showFeedback(message, type = 'error') {
+        const area = document.getElementById('login-feedback');
+        if (!area) return;
+        area.innerHTML = `<span>${message}</span>`;
+        area.className = `alert alert-${type === 'error' ? 'danger' : 'success'} animate__animated animate__headShake py-2 small mb-4`;
+        area.classList.remove('d-none');
+    },
+
+    hideFeedback() {
+        const area = document.getElementById('login-feedback');
+        if (area) area.classList.add('d-none');
+    }
+};
+
+export default LoginForm;

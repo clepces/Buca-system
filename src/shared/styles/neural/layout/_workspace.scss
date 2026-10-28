@@ -1,0 +1,404 @@
+/* =========================================================================
+   LAYOUT: WORKSPACE (Main Content Area)
+   ========================================================================= */
+
+@use "../abstracts" as *;
+
+/* ── NEURAL FADING EDGES SYSTEM — Usando Mixin Global ── */
+
+/* Aplicación al área principal - Movida a sección consolidada abajo */
+
+/* ── CONTAINER MAX UTILITY ── */
+.container-max {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    width: 100%;
+    padding-left: clamp(15px, 5vw, 60px);
+    padding-right: clamp(15px, 5vw, 60px);
+}
+
+/* ── REFINED NAVIGATION RIBBON (Floating Capsule) ────────────────── */
+.workspace-navigation-ribbon {
+    position: relative;
+    /* Ya no es fixed, fluye dentro del layout-header-container */
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    z-index: 50;
+    background: var(--surface-glass);
+    -webkit-backdrop-filter: blur(var(--ui-glass-blur));
+    backdrop-filter: blur(var(--ui-glass-blur));
+    border: 1px solid var(--border-glass-bright);
+    border-radius: var(--ui-capsule-radius);
+    height: 48px;
+    
+    @media screen and (max-height: 800px) {
+        height: 40px;
+    }
+
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: var(--surface-glass-bright);
+        border-color: var(--buca-blue);
+        transform: translateY(-1px);
+    }
+
+    .ribbon-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: 20px;
+    }
+}
+
+/* ── ACTUALIZACIÓN DE ESPACIOS DEL WORKSPACE ── */
+.workspace-area {
+    /* Altura dinámica basada en el stack flotante globalizado */
+    --header-total-height: calc(var(--topbar-height) + 20px);
+
+    margin-top: var(--header-total-height);
+    height: calc(var(--full-height, 100dvh) - var(--header-total-height) - var(--dock-height) - 20px);
+    overflow: hidden auto;
+    padding: 0;
+    position: relative;
+    background: transparent;
+    z-index: 10;
+    scroll-behavior: smooth;
+
+    /* Evitar selección accidental durante navegación táctil o drag */
+    -webkit-user-select: none;
+    user-select: none;
+
+    @supports (-webkit-user-drag: none) {
+        -webkit-user-drag: none;
+    }
+
+    /* La máscara ahora es inteligente y se adapta al contenido (Top: 30px, Bottom: 100px) */
+    @include buca-mask-fade(30px, 100px);
+    @include hide-scrollbar;
+
+    /* Si el ribbon tiene contenido en el header-stack, ajustamos el margen dinámicamente */
+    @at-root body:has(#workspace-nav-slot:not(:empty)) & {
+        --header-total-height: 160px;
+        
+        @media (max-width: 1400px) {
+            --header-total-height: 140px;
+        }
+
+        @media (max-height: 800px) {
+            --header-total-height: 120px;
+        }
+    }
+    
+    /* Si el ribbon está vacío, el margen vuelve al mínimo estándar */
+    @at-root body:has(#workspace-nav-slot:empty) & {
+        --header-total-height: calc(var(--topbar-height) + 20px);
+    }
+
+    /* --- LAYOUT MODE: AUTH (Full Screen Centered) --- */
+    @at-root body[data-layout-mode="auth"] & {
+        --header-total-height: 0px;
+
+        margin-top: 0;
+        height: var(--full-height, 100dvh);
+        display: flex;
+        flex-direction: column; /* Cambiado a columna para mejor flujo de scroll */
+        align-items: center;
+        justify-content: flex-start; /* Alineado al inicio para que el scroll empiece desde arriba */
+        overflow: hidden auto; /* Permitir scroll si el contenido es muy alto */
+        padding-top: 60px; /* Aire debajo del header */
+        padding-bottom: 60px; /* Margen de seguridad inferior */
+
+        .workspace-internal {
+            padding-top: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Evita que el flex corte el top del contenido */
+            width: 100%;
+            min-height: min-content;
+        }
+
+        /* Desactivar máscaras de fade en Login para evitar recortes visuales */
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+}
+
+.breadcrumb-trail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 5px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-glass);
+    overflow-x: auto;
+    max-width: 100%;
+    white-space: nowrap;
+    
+    @include hide-scrollbar;
+
+    .crumb {
+        color: var(--text-muted);
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+
+        i {
+            font-size: 12px;
+            color: var(--buca-blue);
+        }
+
+        &:hover {
+            color: var(--buca-blue);
+        }
+
+        &.active {
+            color: var(--text-main);
+            font-weight: 700;
+            cursor: default;
+            font-size: 0.72rem;
+        }
+    }
+
+    .crumb-separator {
+        color: var(--text-muted);
+        font-size: 8px;
+        opacity: 0.4;
+    }
+}
+
+.workspace-context-actions {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+
+    @media (max-width: 900px) {
+        gap: 12px;
+    }
+
+    .nav-actions-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .context-pill {
+        background: var(--surface-glass);
+        border: 1px solid var(--border-glass);
+        color: var(--text-muted);
+        padding: 8px 18px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+
+        &:hover {
+            background: var(--surface-glass-bright);
+            color: var(--text-main);
+            border-color: var(--buca-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        &.active {
+            background: var(--buca-blue);
+            color: white;
+            border-color: var(--buca-blue);
+            box-shadow: 0 4px 15px var(--buca-blue-glow);
+        }
+    }
+}
+
+/* ── ACTION MINI PILLS (Standardized) ──────────────────── */
+.action-mini-pill {
+    background: var(--surface-glass);
+    border: 1px solid var(--border-glass);
+    color: var(--text-muted);
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-size: 1.1rem;
+
+    &:hover {
+        background: var(--buca-blue);
+        color: white;
+        border-color: var(--buca-blue);
+        transform: scale(1.1) rotate(-5deg);
+        box-shadow: 0 5px 15px var(--buca-blue-glow);
+    }
+}
+
+/* ── SEARCH CAPSULE (EXPANDABLE) ────────────────────────── */
+.ws-search-capsule {
+    display: flex;
+    align-items: center;
+    background: var(--surface-glass);
+    border: 1px solid var(--border-glass-bright);
+    border-radius: 100px;
+    /* Más redondo para modo icono */
+    height: 42px;
+    width: 42px;
+    min-width: 42px;
+    overflow: hidden;
+    transition: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+
+    &:hover:not(.active) {
+        border-color: var(--buca-blue);
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.1);
+    }
+
+    &.active {
+        width: clamp(280px, 40vw, 500px);
+        background: var(--bg-surface);
+        border-color: var(--buca-blue);
+        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.15);
+        padding-left: 5px;
+    }
+
+    .ws-search-trigger {
+        min-width: 40px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--buca-blue);
+        cursor: pointer;
+        font-size: 1.1rem;
+    }
+
+    .ws-search-input-group {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding-right: 10px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s;
+
+        input {
+            width: 100%;
+            background: transparent;
+
+            @include hide-scrollbar;
+
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0 10px;
+        }
+
+        .ws-search-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &:hover {
+                background: rgba(0, 0, 0, 0.05);
+                color: var(--color-error);
+            }
+        }
+    }
+
+    &.active .ws-search-input-group {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+.workspace-internal {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    /* Espacio para el dock */
+}
+
+/* ── STATISTICS STRIP PREMIUM ──────────────────────────── */
+/* Estilos de .stat-card-premium removidos - Migrados a Telemetry Bar Compacta */
+
+/* ── BUSINESS HUB (Carousel with 4-Way Neural Fade) ──────── */
+.ws-business-hub {
+    margin-bottom: 60px;
+    position: relative;
+
+    /* Aplicamos el desvanecimiento lateral solicitado por el usuario */
+    .business-carousel-container {
+        position: relative;
+        padding: 20px 0;
+
+        @include buca-mask-fade(0, 0, 60px, 60px);
+
+        overflow-x: auto;
+
+        @include hide-scrollbar;
+    }
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+
+    .btn-view-all {
+        background: var(--surface-glass);
+        border: 1px solid var(--border-glass);
+        color: var(--text-muted);
+        padding: 8px 18px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        &:hover {
+            background: var(--buca-blue);
+            color: white !important;
+            /* Fix User request: Avoid transparency */
+            border-color: var(--buca-blue);
+            transform: translateX(3px);
+
+            span {
+                color: white;
+            }
+        }
+    }
+}

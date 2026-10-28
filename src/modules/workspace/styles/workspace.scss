@@ -1,0 +1,17 @@
+/**
+ * Workspace Module Styles
+ */
+@use "@/shared/styles/neural/abstracts" as *;
+
+.workspace-dashboard {
+    padding: var(--ui-floating-margin);
+    
+    .dashboard-header {
+        margin-bottom: 30px;
+        h1 {
+            color: var(--text-main);
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+    }
+}
