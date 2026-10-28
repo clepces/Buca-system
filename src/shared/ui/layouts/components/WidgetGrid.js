@@ -108,12 +108,12 @@ export const Workspace = {
                         <div class="nav-actions-group">
                             <!-- Buscador Neural (Icono expansivo) -->
                             <div class="ws-search-capsule" id="ws-search-wrapper">
-                                <button class="ws-search-trigger" onclick="window.toggleWorkspaceSearch(true)" title="Buscar (Ctrl+K)">
+                                <button class="ws-search-trigger" data-action="workspace:toggle_search" data-payload='{"active": true}' title="Buscar (Ctrl+K)">
                                     <i class="bi bi-search"></i>
                                 </button>
                                 <div class="ws-search-input-group">
                                     <input type="text" id="ws-global-search" placeholder="¿Qué estás buscando?">
-                                    <button class="ws-search-close" onclick="window.toggleWorkspaceSearch(false)">
+                                    <button class="ws-search-close" data-action="workspace:toggle_search" data-payload='{"active": false}'>
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
@@ -227,7 +227,7 @@ export const Workspace = {
      */
     _renderQuickAction(label, icon, color) {
         return `
-            <div class="quick-action-item qa--${color}" onclick="if(this.dataset.dragging !== 'true') alert('Abriendo ${label}...');">
+            <div class="quick-action-item qa--${color}" data-action="workspace:quick_action" data-payload='{"label": "${label}"}'>
                 <div class="qa-icon-box">
                     <i class="bi ${icon}"></i>
                 </div>
@@ -354,6 +354,26 @@ export const Workspace = {
                 }
             });
             this._keyShortcutBound = true;
+        }
+
+        // Suscripción desacoplada a acciones del Workspace via EventBus
+        if (!this._workspaceActionsBound) {
+            eventBus.on('workspace:scroll_carousel', ({ direction }) => {
+                const carousel = document.getElementById('business-carousel-main');
+                if (!carousel) return;
+                const scrollAmount = 352;
+                carousel.scrollBy({ left: direction === 'prev' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+            });
+
+            eventBus.on('workspace:toggle_search', ({ active }) => {
+                window.toggleWorkspaceSearch(active);
+            });
+
+            eventBus.on('workspace:quick_action', ({ label }) => {
+                alert(`Abriendo ${label}...`);
+            });
+
+            this._workspaceActionsBound = true;
         }
 
         /**

@@ -39,14 +39,14 @@ export const MainLayout = {
                             <p class="modal-description" id="modal-description">Resumen detallado.</p>
                         </div>
                         <div class="header-actions">
-                            <button class="modal-close-btn" onclick="closeModal()">
+                            <button class="modal-close-btn" data-action="ui:close_modal" onclick="closeModal()">
                                 <i class="bi bi-x"></i>
                             </button>
                         </div>
                     </div>
                     <div class="modal-body" id="modal-body-content"></div>
                     <div class="modal-footer">
-                        <button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>
+                        <button class="btn btn-ghost" data-action="ui:close_modal" onclick="closeModal()">Cerrar</button>
                         <button class="btn btn-primary px-4">Confirmar</button>
                     </div>
                 </div>

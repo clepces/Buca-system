@@ -26,14 +26,14 @@ export const BusinessHub = {
                     <h2 class="section-title"><i class="bi bi-briefcase"></i> Mis Negocios</h2>
                     <div class="carousel-nav-group">
                         <div class="carousel-arrows">
-                            <button class="nav-arrow prev" onclick="window.scrollCarousel('prev')" title="Anterior">
+                            <button class="nav-arrow prev" data-action="workspace:scroll_carousel" data-payload='{"direction": "prev"}' title="Anterior">
                                 <i class="bi bi-chevron-left"></i>
                             </button>
-                            <button class="nav-arrow next" onclick="window.scrollCarousel('next')" title="Siguiente">
+                            <button class="nav-arrow next" data-action="workspace:scroll_carousel" data-payload='{"direction": "next"}' title="Siguiente">
                                 <i class="bi bi-chevron-right"></i>
                             </button>
                         </div>
-                        <button class="btn-view-all" onclick="window.openModal('Todos mis Negocios')">
+                        <button class="btn-view-all" data-action="ui:open_modal" data-payload='{"title": "Todos mis Negocios"}'>
                             Ver todos <span><i class="bi bi-chevron-right"></i></span>
                         </button>
                     </div>
@@ -44,7 +44,7 @@ export const BusinessHub = {
                     <div class="carousel-edge-fade right"></div>
                     <div class="business-carousel" id="business-carousel-main">
                         ${items.map(b => this.renderCard(b)).join('')}
-                        <div class="business-card create-new" onclick="window.openCreateBusiness()">
+                        <div class="business-card create-new" data-action="ui:open_create_business">
                             <div class="create-icon"><i class="bi bi-plus-lg"></i></div>
                             <span class="create-label">Crear Negocio</span>
                             <span class="create-subtext">Nueva unidad ERP</span>
@@ -103,7 +103,7 @@ export const BusinessHub = {
                     </div>
                 </div>
                 <div class="bc-footer">
-                    <button class="btn btn-ghost w-full" data-business="${escapeHTML(name)}" onclick="window.enterBusiness(this.dataset.business)">
+                    <button class="btn btn-ghost w-full" data-action="ui:enter_business" data-payload='{"id": "${escapeHTML(name)}"}'>
                         <span>Entrar a Gestión</span>
                         <i class="bi bi-arrow-right-short"></i>
                     </button>

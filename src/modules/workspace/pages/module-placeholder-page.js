@@ -35,10 +35,10 @@ export const createModulePage = ({ title, category, icon, description }) => ({
                                     El registro y administración de <strong>${title.toLowerCase()}</strong> está sincronizado con el bus de eventos del núcleo.
                                 </p>
                                 <div class="d-flex gap-2">
-                                    <button class="btn btn-primary" onclick="window.openModal ? window.openModal('Gestión de ${title}', '${category}', 'Operaciones de alta, baja y auditoría para ${title}.') : null">
+                                    <button class="btn btn-primary" data-action="ui:open_modal" data-payload='{"title": "Gestión de ${title}", "subtitle": "${category}", "description": "Operaciones de alta, baja y auditoría para ${title}."}'>
                                         <i class="bi bi-plus-lg me-1"></i> Nuevo Registro
                                     </button>
-                                    <button class="btn btn-ghost" onclick="window.openModal ? window.openModal('Exportar ${title}', 'Reporte Oficial', 'Generación de informes de métricas.') : null">
+                                    <button class="btn btn-ghost" data-action="ui:open_modal" data-payload='{"title": "Exportar ${title}", "subtitle": "Reporte Oficial", "description": "Generación de informes de métricas."}'>
                                         <i class="bi bi-download me-1"></i> Exportar Datos
                                     </button>
                                 </div>

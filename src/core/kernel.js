@@ -291,6 +291,12 @@ class BucaKernel {
         eventBus.on('engine:recalibrate', () => GraphicsEngine.calibrate());
 
         // Conexión con los Modales del UI Bridge
+        eventBus.on('ui:open_modal', (data) => {
+            if (window.openModal) window.openModal(data.title, data.subtitle, data.description);
+        });
+        eventBus.on('ui:close_modal', () => {
+            if (window.closeModal) window.closeModal();
+        });
         eventBus.on('ui:open_performance', () => { if (window.openPerformanceSettings) window.openPerformanceSettings(); });
         eventBus.on('ui:open_rate', () => { if (window.openRateModal) window.openRateModal(); });
         eventBus.on('ui:open_settings', () => { if (window.openSettings) window.openSettings(); });
