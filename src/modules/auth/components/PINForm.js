@@ -13,12 +13,12 @@ export const PINForm = {
                 </div>
 
                 <div class="d-flex justify-content-between mb-4" id="pin-inputs" style="gap: 8px;">
-                    <input type="text" maxlength="1" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="0" inputmode="numeric" placeholder="•">
-                    <input type="text" maxlength="1" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="1" inputmode="numeric" placeholder="•">
-                    <input type="text" maxlength="1" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="2" inputmode="numeric" placeholder="•">
-                    <input type="text" maxlength="1" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="3" inputmode="numeric" placeholder="•">
-                    <input type="text" maxlength="1" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="4" inputmode="numeric" placeholder="•">
-                    <input type="text" maxlength="1" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="5" inputmode="numeric" placeholder="•">
+                    <input type="text" maxlength="1" id="pin-digit-0" name="pin-0" autocomplete="one-time-code" aria-label="Dígito 1 del PIN" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="0" inputmode="numeric" placeholder="•">
+                    <input type="text" maxlength="1" id="pin-digit-1" name="pin-1" autocomplete="one-time-code" aria-label="Dígito 2 del PIN" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="1" inputmode="numeric" placeholder="•">
+                    <input type="text" maxlength="1" id="pin-digit-2" name="pin-2" autocomplete="one-time-code" aria-label="Dígito 3 del PIN" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="2" inputmode="numeric" placeholder="•">
+                    <input type="text" maxlength="1" id="pin-digit-3" name="pin-3" autocomplete="one-time-code" aria-label="Dígito 4 del PIN" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="3" inputmode="numeric" placeholder="•">
+                    <input type="text" maxlength="1" id="pin-digit-4" name="pin-4" autocomplete="one-time-code" aria-label="Dígito 5 del PIN" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="4" inputmode="numeric" placeholder="•">
+                    <input type="text" maxlength="1" id="pin-digit-5" name="pin-5" autocomplete="one-time-code" aria-label="Dígito 6 del PIN" class="form-control text-center fw-bold p-0" style="width: 45px; height: 56px; font-size: 1.5rem;" data-index="5" inputmode="numeric" placeholder="•">
                 </div>
 
                 <div id="pin-feedback" class="alert d-none py-2 small mb-4 text-center animate__animated animate__shakeX"></div>

@@ -12,17 +12,24 @@ class StorageAdapter {
     constructor() {
         this.driver = null;
         this._initialized = false;
+        this._currentTier = 'L0';
     }
 
     /**
-     * Inicializa el motor de guardado basándose en el Tier de rendimiento.
+     * Inicializa o actualiza el motor de guardado basándose en el Tier de rendimiento.
      * @param {string} tier - 'L0', 'L1', 'L2', 'L3'
      */
     init(tier = 'L0') {
-        if (this._initialized) return;
+        const isAdvancedTier = tier === 'L2' || tier === 'L3';
+        const targetDriverClass = isAdvancedTier ? IndexedDBDriver : LocalDriver;
 
-        // Estrategia: Tier L0/L1 usan LocalStorage. L2/L3 usan IndexedDB.
-        if (tier === 'L2' || tier === 'L3') {
+        // Si ya está activo el driver del tipo correspondiente, no re-instanciar
+        if (this.driver instanceof targetDriverClass) {
+            this._currentTier = tier;
+            return;
+        }
+
+        if (isAdvancedTier) {
             this.driver = new IndexedDBDriver();
             console.log('[Storage] -> Motor Avanzado Activado (IndexedDB)');
         } else {
@@ -30,6 +37,7 @@ class StorageAdapter {
             console.log('[Storage] -> Motor Ligero Activado (LocalStorage)');
         }
 
+        this._currentTier = tier;
         this._initialized = true;
     }
 
@@ -46,13 +54,19 @@ class StorageAdapter {
     }
 
     async set(key, value) {
-        if (!this._initialized) this.init(); // Fallback a L0 si no se ha inicializado
+        if (!this._initialized) this.init();
         return await this.driver.set(key, value);
     }
 
     async get(key) {
         if (!this._initialized) this.init();
-        return await this.driver.get(key);
+        const val = await this.driver.get(key);
+        // Fallback a LocalDriver si estamos en IndexedDB y el dato se guardó en LocalStorage
+        if (val === null && this.driver instanceof IndexedDBDriver) {
+            const localFallback = new LocalDriver();
+            return await localFallback.get(key);
+        }
+        return val;
     }
 
     async remove(key) {

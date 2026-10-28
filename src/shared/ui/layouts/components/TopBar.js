@@ -45,39 +45,32 @@ export const Header = {
      * Escucha en el documento para atrapar clics en el Header y en los Paneles (en el body).
      */
     _bindEvents() {
-        // 1. Manejo de clics delegados (Botones con data-action)
+        // 1. Manejo de clics delegados (Botones exclusivos del Header)
         document.addEventListener('click', (e) => {
             const trigger = e.target.closest('[data-action]');
             
-            // Si hay un trigger con acción, lo procesamos y detenemos el flujo
             if (trigger) {
-                // Detener propagación para que no interfiera con otros elementos
-                // e.stopPropagation(); // Opcional, pero recomendable en delegación
-                
                 const action = trigger.getAttribute('data-action');
                 const target = trigger.getAttribute('data-target');
 
-                console.log(`[Header] -> Action: ${action}`);
-
-                switch (action) {
-                case 'header:toggle_panel':
-                    this.togglePanel(target, trigger);
-                    break;
-                case 'header:scroll_qc_left':
-                    this.scrollQC(-80);
-                    break;
-                case 'header:scroll_qc_right':
-                    this.scrollQC(80);
-                    break;
-                case 'header:toggle_fullscreen':
-                    this.toggleFullscreen();
-                    break;
-                default:
-                    // Si no es interna del Header, va al EventBus global
-                    eventBus.emit(action, trigger.dataset);
-                    break;
+                if (action && action.startsWith('header:')) {
+                    console.log(`[Header] -> Action: ${action}`);
+                    switch (action) {
+                    case 'header:toggle_panel':
+                        this.togglePanel(target, trigger);
+                        break;
+                    case 'header:scroll_qc_left':
+                        this.scrollQC(-80);
+                        break;
+                    case 'header:scroll_qc_right':
+                        this.scrollQC(80);
+                        break;
+                    case 'header:toggle_fullscreen':
+                        this.toggleFullscreen();
+                        break;
+                    }
+                    return;
                 }
-                return; // ⛔ IMPORTANTE: Detenemos aquí para que no se ejecute el cierre de paneles
             }
 
             // 2. Clic fuera de paneles y dropdowns -> Cerrar todo

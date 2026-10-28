@@ -79,7 +79,7 @@ export const Dock = {
                 return;
             }
 
-            eventBus.emit(action, data);
+            // Nota: Kernel despacha centralizadamente [data-action] hacia el EventBus
         });
     },
 

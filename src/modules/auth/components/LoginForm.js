@@ -9,10 +9,11 @@ export const LoginForm = {
                 <div id="login-feedback" class="alert alert-danger d-none animate__animated animate__fadeIn py-2 small mb-4"></div>
 
                 <div class="mb-3 form-group">
-                    <label class="form-label small fw-bold text-uppercase opacity-75">Correo Corporativo</label>
+                    <label for="email" class="form-label small fw-bold text-uppercase opacity-75">Correo Corporativo</label>
                     <div class="input-wrapper">
                         <i class="bi bi-envelope"></i>
                         <input type="email" id="email" name="email" 
+                               autocomplete="username email"
                                placeholder="elexdy.publice@gmail.com" 
                                value="elexdy.publice@gmail.com"
                                class="glass-input" required>
@@ -20,14 +21,15 @@ export const LoginForm = {
                 </div>
 
                 <div class="mb-3 form-group">
-                    <label class="form-label small fw-bold text-uppercase opacity-75">Contraseña</label>
+                    <label for="password" class="form-label small fw-bold text-uppercase opacity-75">Contraseña</label>
                     <div class="input-wrapper">
                         <i class="bi bi-lock"></i>
                         <input type="password" id="password" name="password" 
+                               autocomplete="current-password"
                                placeholder="••••••••" 
                                value="123456"
                                class="glass-input" required>
-                        <button class="btn-toggle-password" type="button" id="toggle-password">
+                        <button class="btn-toggle-password" type="button" id="toggle-password" aria-label="Mostrar u ocultar contraseña">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>

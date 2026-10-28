@@ -6,6 +6,7 @@
  * =========================================================================
  */
 import { BusinessHub } from '@/shared/ui/components/hub/BusinessHub.js';
+import { eventBus } from '@/core/eventBus/index.js';
 
 export const Workspace = {
     /** @type {string} Nombre de usuario mock */
@@ -32,6 +33,21 @@ export const Workspace = {
         premiumContainer.className = 'workspace-premium';
 
         workspaceInternal.prepend(premiumContainer);
+
+        const currentPath = window.location.pathname;
+        const isHome = currentPath === '/' || currentPath === '/workspace' || currentPath === '/workspaces';
+        premiumContainer.style.display = isHome ? 'block' : 'none';
+
+        if (!this._routeSubscribed) {
+            eventBus.on('router:changed', ({ path }) => {
+                const premium = document.getElementById('workspace-premium');
+                if (premium) {
+                    const home = path === '/' || path === '/workspace' || path === '/workspaces';
+                    premium.style.display = home ? 'block' : 'none';
+                }
+            });
+            this._routeSubscribed = true;
+        }
 
         this.renderStats();
         this.renderBusiness();
