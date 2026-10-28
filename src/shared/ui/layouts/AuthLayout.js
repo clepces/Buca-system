@@ -23,7 +23,7 @@ export const AuthLayout = {
                         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
                     </div>
                     <div class="floating-icon microsoft" title="Acceso Microsoft">
-                        <img src="https://cdn.simpleicons.org/microsoft/737373" alt="Microsoft">
+                        <i class="bi bi-microsoft"></i>
                     </div>
                     <div class="floating-icon apple" title="Acceso Apple">
                         <i class="bi bi-apple"></i>

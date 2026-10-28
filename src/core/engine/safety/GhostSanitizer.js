@@ -25,12 +25,10 @@ export class GhostSanitizer {
     }
 
     #performSanitize() {
-        const ghosts = document.querySelectorAll('[style*="opacity: 0"], .hidden');
+        const ghosts = document.querySelectorAll('.hidden:not([data-bne-ignore])');
         let sanitizedCount = 0;
         ghosts.forEach(el => {
-            const style = getComputedStyle(el);
-            if ((style.opacity === '0' || el.classList.contains('hidden')) && style.display !== 'none') {
-                // Limpieza agresiva: Forzar display none para liberar recursos del navegador
+            if (el.style.display !== 'none') {
                 el.style.display = 'none';
                 sanitizedCount++;
             }

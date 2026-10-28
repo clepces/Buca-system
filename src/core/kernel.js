@@ -119,8 +119,8 @@ class BucaKernel {
         await Promise.all(modulesToLoad.map(m => ModuleLoader.load(m)));
 
         // 8. Activación de Sistemas de Control
-        router.init(routes);
         this.setupEventListeners();
+        router.init(routes);
         this.startTelemetry();
         await this.handleEmulatorWarning();
 

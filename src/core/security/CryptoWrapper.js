@@ -48,6 +48,7 @@ export const CryptoWrapper = {
             for (let i = 0; i < xorStr.length; i++) {
                 text += String.fromCharCode(xorStr.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
             }
+            return text;
         } catch (e) {
             // Si falla, asumimos que era texto plano. No mostramos el error completo para evitar ensuciar la consola.
             console.debug('[CryptoWrapper] Se leyó texto plano (no cifrado).');

@@ -40,8 +40,13 @@ export const Dock = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
+        if (container.querySelector('.dock-container')) return;
+
         this.renderTo(container);
-        this._bindEvents();
+        if (!this._eventsBound) {
+            this._bindEvents();
+            this._eventsBound = true;
+        }
         
         // Posición inicial de la curva
         setTimeout(() => this._updateCurve(this.state.activeIndex), 100);

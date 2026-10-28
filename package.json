@@ -9,6 +9,14 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "sass-embedded": "^1.106.1",
     "vite": "^8.0.14"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.6.2",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.2",
+    "firebase": "^13.1.0",
+    "lucide": "^1.63.0"
   }
 }

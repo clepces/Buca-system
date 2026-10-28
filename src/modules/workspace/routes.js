@@ -17,6 +17,12 @@ export const workspaceRoutes = [
         requiresAuth: true
     },
     {
+        path: '/workspaces',
+        component: WorkspacePage,
+        title: 'Directorio de Espacios',
+        requiresAuth: true
+    },
+    {
         path: '/workspace/settings',
         component: { render: () => '<h2>Configuración del Negocio</h2>' },
         title: 'Ajustes',

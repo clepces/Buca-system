@@ -4,6 +4,7 @@ export class FPSMonitor {
         this.frameWeights = [];
         this.lastFrameTime = performance.now();
         this.isRunning = false;
+        this._boundCheck = this.check.bind(this);
     }
 
     start() {
@@ -11,7 +12,7 @@ export class FPSMonitor {
         this.isRunning = true;
         this.lastFrameTime = performance.now();
         this.frameWeights = [];
-        requestAnimationFrame(this.check.bind(this));
+        requestAnimationFrame(this._boundCheck);
     }
 
     stop() {
@@ -20,7 +21,7 @@ export class FPSMonitor {
 
     check() {
         if (!this.isRunning || this.engine.isPaused || this.engine.isCalibrating) {
-            if (this.isRunning) requestAnimationFrame(this.check.bind(this));
+            if (this.isRunning) requestAnimationFrame(this._boundCheck);
             return;
         }
 
@@ -43,6 +44,6 @@ export class FPSMonitor {
             window.dispatchEvent(new CustomEvent('buca:perf_critical'));
         }
 
-        requestAnimationFrame(this.check.bind(this));
+        requestAnimationFrame(this._boundCheck);
     }
 }

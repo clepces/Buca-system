@@ -18,10 +18,11 @@ export const Header = {
      * @param {string} containerId - ID del contenedor donde se inyectará el header.
      */
     init(containerId = 'topbar-slot') {
-        if (this._initialized) return;
-
         const container = document.getElementById(containerId);
         if (!container) return;
+
+        // Si ya está renderizado en el slot actual, evitar duplicar
+        if (container.querySelector('.app-header')) return;
 
         container.innerHTML = this.render();
         this.element = container.querySelector('.app-header'); // Asignar el elemento
@@ -30,8 +31,11 @@ export const Header = {
         this._extractPanelsToBody();
         // Inicializar gestos táctiles
         this._initTouchGestures();
-        // Inicializar despachador central de eventos (Seguridad Pro)
-        this._bindEvents();
+        // Inicializar despachador central de eventos una sola vez
+        if (!this._eventsBound) {
+            this._bindEvents();
+            this._eventsBound = true;
+        }
 
         this._initialized = true;
     },

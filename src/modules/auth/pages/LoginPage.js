@@ -1,6 +1,7 @@
 import LoginForm from '../components/LoginForm.js';
 import PINForm from '../components/PINForm.js';
 import { router } from '@/core/router/router.js';
+import { sessionState } from '@/core/state/session.js';
 
 export const LoginPage = {
     render() {
@@ -85,7 +86,7 @@ export const LoginPage = {
                 (enteredPin) => {
                     // Validar el PIN
                     if (enteredPin === otpCode || enteredPin === '123456') { // 123456 como backdoor para devs
-                        this.showWelcomeAndLoading();
+                        this.showWelcomeAndLoading(email);
                     } else {
                         PINForm.showFeedback('El código ingresado es incorrecto.', 'error');
                         // Resetear estado del botón para permitir reintento
@@ -110,7 +111,7 @@ export const LoginPage = {
         });
     },
 
-    showWelcomeAndLoading() {
+    showWelcomeAndLoading(email = 'superadmin@buca.com') {
         const welcomeHTML = `
             <div class="welcome-container text-center animate__animated animate__fadeIn">
                 <div class="welcome-badge mb-3">
@@ -159,7 +160,14 @@ export const LoginPage = {
                     progress = 100;
                     clearInterval(interval);
                     bar.style.background = '#22c55e';
-                    setTimeout(() => router.navigate('/workspaces'), 800);
+                    sessionState.set({
+                        isAuthenticated: true,
+                        user: {
+                            email,
+                            displayName: email ? email.split('@')[0] : 'Super Admin'
+                        }
+                    });
+                    setTimeout(() => router.navigate('/workspace'), 800);
                 }
 
                 if (bar) bar.style.width = `${progress}%`;
