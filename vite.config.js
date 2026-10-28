@@ -28,5 +28,19 @@ export default defineConfig({
         port: 3002,
         strictPort: true,
         cors: true
+    },
+    build: {
+        chunkSizeWarningLimit: 800,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('firebase')) return 'vendor-firebase';
+                        if (id.includes('bootstrap')) return 'vendor-bootstrap';
+                        return 'vendor';
+                    }
+                }
+            }
+        }
     }
 });
