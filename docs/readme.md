@@ -41,4 +41,3 @@ Tu pasaporte para monetizar tus habilidades individuales. Una identidad flexible
 • Multiempleo y Libertad Horaria: Organiza tus propios horarios y gestiona tu tiempo para cubrir varios frentes a la vez en la agenda integrada. Trabaja en los negocios que más te favorezcan para maximizar tus ingresos extra.
 • Reputación Bilateral: Construye tu historial profesional en la app. Recibe calificaciones de tus empleadores por tu gran desempeño y, al mismo tiempo, califica a los Owners para garantizar un entorno de trabajo justo y transparente.
 
-[falta redaptar todo sobre la app]
