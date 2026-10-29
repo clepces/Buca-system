@@ -1,0 +1,740 @@
+==========================================================================================
+📂 MAPA DE RAIZ - ESTRUCTURA Y ARCHIVOS - PROYECTO MODULAR - B.U.C.A SYSTEM (v2026.05.24)
+==========================================================================================
+
+==========================================================================================
+📌 SECCIÓN DE MODIFICACIONES, NOTAS Y OPINIONES DE ARQUITECTURA - ANTIGRAVITY (2026-05-25)
+==========================================================================================
+
+1. 🛠️ MODIFICACIONES REALIZADAS (RESOLUCIÓN DE INCONSISTENCIAS / CABLES CORTADOS):
+   - [COMPLETADO] EventBus: Se implementó de manera nativa y robusta el método 'once(event, callback)' en
+     'src/core/eventBus/index.js' para soportar suscripciones de un único uso. Esto resolvió el crash
+     fatal de cambio de layout que se producía en 'router.js:L136' ("TypeError: eventBus.once is not a function").
+   - [COMPLETADO] EventBus - Sincronización Segura: Se optimizó el método 'emit()' para clonar el array
+     de callbacks antes de iterar, evitando condiciones de carrera si un evento se desuscribe durante la emisión.
+   - [COMPLETADO] GraphicsEngine - Fugas de Memoria y CPU: Se re-escribió 'destroy()' en 'src/core/engine/graphics.js'
+     para detener de forma limpia todos los procesos de fondo y sensores que quedaban huérfanos:
+     - Detención del timer periódico '_stateSyncInterval'.
+     - Desconexión del 'mutationObserver' y del 'intersectionObserver' (libera VRAM y nodos del DOM).
+     - Detención de 'memoryGuard', 'reflowGuard' y 'ghostSanitizer' al apagar el motor.
+     - Detención formal de 'thermalMonitor' usando su método '.stop()' (antes se buscaba el inexistente '.disconnect()').
+     - Reset de la instancia estática ('GraphicsEngine.#instance = null') para admitir inicializaciones limpias de cero.
+   - [COMPLETADO] ResourceThrottle: Se creó el método 'stop()' en 'src/core/engine/services/ResourceThrottle.js'
+     para desregistrar los event listeners de window ('graphics:tier-changed' y 'buca:perf_critical_network_pause')
+     durante la parada del motor, evitando fugas pasivas en el Garbage Collector.
+
+2. 🧠 CRÍTICA Y DIAGNÓSTICO DE LA ESTRUCTURA MODULAR ACTUAL DE BUCA:
+   - Estado Actual: La separación en "Core", "Modules" y "Shared" es EXCEPCIONAL. Refleja un diseño de software
+     maduro, escalable y muy robusto para una SPA pura sin frameworks (Vanilla JS + Vite).
+   - El Motor Neural (BNE): Un acierto absoluto. Integrar telemetría en tiempo real y perfiles (eco, balanced, ultra)
+     garantiza accesibilidad y rendimiento premium en hardware heredado (Eco L0) y de última generación.
+   - El Flujo de Autenticación: Diseñado con transiciones fluidas de "Corporate Hybrid Glass" que aumentan el valor
+     percibido del software, manteniendo la modularidad al 100% (evitando que auth o el panel se mezclen).
+
+3. 🚀 IDEAS NUEVAS Y RECOMENDACIONES DE ARQUITECTURA A FUTURO:
+   - IDEA 1: Router Dinámico Desacoplado:
+     Actualmente, los módulos registran sus rutas cargando dinámicamente sus carpetas. Recomiendo que el Router Core
+     implemente una política "strict modules" donde cada módulo exporte un manifiesto JSON con sus rutas de acceso.
+     Esto permitirá que la aplicación deshabilite módulos completos en caliente (ej. si el usuario no tiene la suscripción
+     activa) sin tener que tocar una sola línea de código del Core.
+   - IDEA 2: Implementación de un "State Time-Travel / Snapshots":
+     Dado que todo el estado se gestiona centralizado en 'src/shared/state/', podríamos implementar un helper en el
+     State Store que guarde instantáneas (snapshots) del estado actual del panel. Si el cliente tiene mala conexión,
+     podrá restaurar el estado exacto del panel de transacciones al instante en que se desconectó.
+   - IDEA 3: PWA & Service Worker Avanzado:
+     Optimizar 'sw.js' para cachear agresivamente las colecciones de Firestore estáticas del negocio (como la lista de productos)
+     usando IndexedDB. De esta manera, el sistema podrá trabajar de forma 100% OFF-LINE completa en zonas con conexión
+     inestable (típicas en negocios de Venezuela), sincronizando transacciones en segundo plano una vez que la red retorne.
+   - IDEA 4: Sistema de Permisos Basado en Claims:
+     Mover la validación de 'permissions.js' a un modelo basado en JSON Claims dentro de 'users/${uid}' en Firestore.
+     Esto evitará hardcodear roles a nivel de frontend y permitirá que las reglas de Firebase ('firestore.rules')
+     bloqueen peticiones en tiempo real de forma dinámica.
+
+==========================================================================================
+
+# RAIZ_PROYECTO 
+│
+├── .gitignore                  # Archivos y directorios excluidos del control de versiones de Git
+├── .firebaserc                 # Configuración de entornos y alias de proyectos en Firebase (CRÍTICO)
+│
+├── firebase.json               # Reglas de seguridad, hosting, emuladores y comportamiento del Backend (CRÍTICO)
+├── firestore.indexes.json      # Configuración de índices compuestos obligatorios para Firestore
+├── firestore.rules             # Reglas de seguridad de acceso y escritura a la base de datos de Firestore
+├── storage.rules               # Reglas de seguridad para el almacenamiento de archivos multimedia en Firebase Storage
+│
+├── package.json                # Lista de dependencias de NPM, scripts y metadatos del proyecto
+├── package-lock.json           # Registro de versiones exactas e integridad del árbol de dependencias de NPM
+│
+├── .agent/                     # Archivos de contexto del agente inteligente de desarrollo
+├── .firebase/                  # Archivos de estado locales creados por la CLI de Firebase durante pruebas
+├── .idx/                       # Configuración del entorno de desarrollo en la nube Google Project IDX
+├── .vscode/                    # Configuración personalizada de extensiones y comportamiento para VS Code
+│
+├── buca-app                    # Proyecto BUCA (LEGACY) Tipo: [Monolítico]
+├── buca-app-modular            # Proyecto BUCA (LEGACY) Tipo: [Modular (legacy)], [Motor Gráfico (legacy)] 
+├── buca-website                # Proyecto BUCA (Nuevo) Tipo: [Modular (Nuevo)], [Motor Gráfico (Nuevo)]    
+│   │
+│   ├── .env                    # Variables de entorno (CRÍTICO)
+│   ├── .gitignore              # Archivos y directorios excluidos del control de versiones de Git
+│   │
+│   ├── .markuplintrc           # 
+│   ├── .stylelintrc.json       # 
+│   ├── eslint.config.js        # 
+│   ├── jsconfig.json           # 
+│   ├── postcss.config.js       # 
+│   │
+│   ├── package.json            # 
+│   ├── vite.config.mjs         # 
+│   │
+│   ├── index.html              # 
+│   │   
+│   ├── docs/                   # Documentación técnica, manuales, versiones y directivas del proyecto
+│   ├── node_modules/           # Dependencias de paquetes y librerías externas instaladas por NPM
+│   │
+│   ├── public/                 # Directorio de recursos públicos accesibles directamente por el navegador
+│   │   ├── manifest.json       # Configuración del manifiesto de la aplicación PWA (CRÍTICO)
+│   │   ├── sw.js               # Actualizador de versiones, almacenamiento en caché y procesos en segundo plano (PWA)
+│   │   └── assets/             # Logotipos, iconos, splash screens y recursos estáticos sin procesar
+│   │       │
+│   │       │
+│   │       ├── icons/
+│   │       │   │
+│   │       │   ├── .ui-design/ 
+│   │       │   │    └── dev-icon-(1/300).svg 
+│   │       │   │
+│   │       │   ├── android/ 
+│   │       │   │    └── android-launchericon-(48/72/96/144/192/515)-(*).png 
+│   │       │   │
+│   │       │   ├── ios/ 
+│   │       │   │    └── (16/20/29/32/40/50/57/60/64/72/80/87/100/114/120/128/144/152/167/180/192/256/512/1024).png 
+│   │       │   │
+│   │       │   ├── windows11/
+│   │       │   │    └── LargeTile.scale-(100/125/150/200/400).png 
+│   │       │   │    └── SmallTile.scale-(100/125/150/200/400).png 
+│   │       │   │    └── SplashScreen.scale-(100/125/150/200/400).png 
+│   │       │   │    └── Square44x44Logo.altform-lightunplated_targetsize-(16/20/24/30/32/36/40/44/48/60/64/72/80/96/256).png 
+│   │       │   │    └── Square44x44Logo.altform-unplated_targetsize-(16/20/24/30/32/36/40/44/48/60/64/72/80/96/256).png 
+│   │       │   │    └── Square44x44Logo.scale-(100/125/150/200/400).png 
+│   │       │   │    └── Square44x44Logo.targetsize-(16/20/24/30/32/36/40/44/48/60/64/72/80/96/256).png 
+│   │       │   │    └── Square150x150Logo.scale-(100/125/150/200/400).png 
+│   │       │   │    └── StoreLogo.scale-(100/125/150/200/400).png 
+│   │       │   │    └── Wide310x150Logo.scale-(100/125/150/200/400).png 
+│   │       │   │
+│   │       │   ├── logo-dark.svg
+│   │       │   ├── logo-light.svg
+│   │       │   └── logo-new.png    
+│   │       │   
+│   │       ├── media/
+│   │       │   │
+│   │       │   ├── company/
+│   │       │   │    └── company-(01/28).svg 
+│   │       │   │
+│   │       │   ├── wallpaper.jpg 
+│   │       │   └── wallpaper.png
+│   │       │   
+│   │       ├── screenshots/
+│   │       │   │
+│   │       │   ├── screenshot-desktop.jpg
+│   │       │   └── screenshot-mobile.jpg
+│   │       │   
+│   │       ├── logo-dark.png
+│   │       └── logo-light.png
+│   │       
+│   │       
+│   └── src/                    # Directorio raíz con el código de la aplicación
+│       │
+│       ├── main.js/            #
+│       │
+│       ├── core/               # El núcleo central de la aplicación (arquitectura interna y lógica global)
+│       │   │
+│       │   ├── index.js        #
+│       │   ├── kernel.js       # 
+│       │   ├── ModuleLoader.js # (Nota:llamarlo autoload.js pero esto abierto a opiniones)
+│       │   │
+│       │   ├── api/              # Conectividad HTTP, mapeo de endpoints y utilidades de consumo de APIs
+│       │   │   │
+│       │   │   ├── baseClient.js   #
+│       │   │   ├── endpoint.js     #
+│       │   │   └── http.js         # 
+│       │   │   
+│       │   │   // ARCHIVO NO EXITEN 
+│       │   │   // NO SE SI ESTA FORMA DE TRABAJAR ES LA CORRECTA PERO DIME SI ES UNA BUENA
+│       │   │   // IDEA O MALA IDEA O PERJUDICA A LA APLICACION
+│       │   │   ├── errorMapper.js  # Manejo de errores 
+│       │   │   └── external/       # APIs externas
+│       │   │       └── bcv.api.js     # Tasa del día
+│       │   │   
+│       │   │   
+│       │   │   NOTA: ESTA CARPETA POR EL MOMENTO ESTARA ASI PERO ESTOY BUSCADO SUGERENCIA PARA 
+│       │   │         MEJORA SU ESTRUCTURA ESTOY ABIERTO A OPINIONES DESPUES DE TODO LA API SON
+│       │   │         TANTO EXTERNA COMO INTERNAS O LOCALES NOSE CUANTO TIPO EXISTEN LIBRE DE COMENTAR
+│       │   │        
+│       │   │         COMENTAR AQUI:
+│       │   │         [Antigravity]: Esta estructura de APIs es ideal. Sugiero dividirla en:
+│       │   │         1) internal/ -> Consumo de Firebase Cloud Functions y Firestore local (seguro y Spark Plan friendly).
+│       │   │         2) external/ -> Para APIs de terceros (como bcv.api.js).
+│       │   │         La idea de errorMapper.js es EXCELENTE para traducir errores HTTP/Firebase a mensajes amigables para el usuario
+│       │   │         (según error-handling.md) y evitar fallos silenciosos en la UI.
+│       │   │       
+│       │   ├── config/         # Ajustes de constantes, permisos de usuario y configuraciones iniciales
+│       │   │   │
+│       │   │   ├── config.js      #
+│       │   │   ├── environment.js #
+│       │   │   ├── firebase.js    #
+│       │   │   └── permissions.js #
+│       │   │       
+│       │   │       
+│       │   │   NOTA: ESTE ARCHIVO NO SE SI SERIA UTIL O SERIA INECESARIO PERO DIME TU 
+│       │   │   OPINION YA QUE ESTO LO TENIA LA VERSION LEGACY. ARCHIVO -> constants.js 
+│       │   │   # Constantes globales
+│       │   │       
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: No recomiendo un archivo masivo de "constants.js" global en la raíz de Core. 
+│       │   │   Es mucho mejor seguir esta estrategia limpia y modular para evitar que se mezclen cables:
+│       │   │   1) Mantener la configuración y nombres de colecciones/eventos del sistema centralizados en "core/config/config.js".
+│       │   │   2) Guardar las constantes específicas de cada módulo dentro de su propia carpeta modular (ej: "src/modules/auth/constants/auth.constants.js").
+│       │   │   De esta manera, si en el futuro decides remover o cambiar un módulo, no dejarás constantes "huérfanas" en un archivo global.
+│       │   │       
+│       │   │   
+│       │   │   // MOTOR GRAFICO BUCA NEURAL ENGINE 
+│       │   ├── engine/         #
+│       │   │   │
+│       │   │   ├── engine.js   #
+│       │   │   ├── graphics.js #
+│       │   │   │
+│       │   │   ├── monitor/    #
+│       │   │   │   │
+│       │   │   │   ├── FPSMonitor.js   #
+│       │   │   │   ├── MemoryGuard.js  #
+│       │   │   │   └── ThermalGuard.js #
+│       │   │   │
+│       │   │   ├── profiles/   #
+│       │   │   │   └── index.js #
+│       │   │   │
+│       │   │   ├── safety/     #
+│       │   │   │   │
+│       │   │   │   ├── GhostSanitizer.js   #
+│       │   │   │   └── ReflowGuard.js #
+│       │   │   │
+│       │   │   ├── services/     #
+│       │   │   │   │
+│       │   │   │   ├── HUDFeedbackManager.js   #
+│       │   │   │   └── ResourceThrottle.js #
+│       │   │   │
+│       │   │   └── utils/      #
+│       │   │       │
+│       │   │       └── hardwareDetector.js #
+│       │   │   
+│       │   │   
+│       │   │   NOTA: PRECENTADO AL NUEVO MOTR GRAFICO DE LA APLICACION YA QUE ES MAS LIVIANO,
+│       │   │         MAS INTELIGENT, SU FUNCIONES SON MAS MODERNA Y MAS DESCONOSCO QUE OTRA COSA 
+│       │   │         TIENE EN SU LOGICA Y SU INTERFAZ PERO DE QUE FUNCIONA SI LO HACE, PERO SE NOTA 
+│       │   │         QUE ESTA ES SU PRIMERA ETAPAS Y DESCONOCS QUE PROBLEMA TIENE O FALLOS OCULTO 
+│       │   │         POR LO TANTO QUIERO UNA ANALIS DE TODO SUS ARCHIVO DIRECTORIO Y QUE PIENSA DE 
+│       │   │         SU ESTRUTURA Y COMO FUNCIONA  SI PERJUDICA LA APLICACION O ES EN REALIDAD UTIL 
+│       │   │         DESPUES DE TODO ES MOTOR GRAFICO (BNE) TIENE UN CAMINO QUE RECORRE Y NECESITO
+│       │   │         APOYO Y BUSCA TODO LOS PROBLEMA EXISTENTE Y RESOLVERLOS. SI TIENE IDEAS O CONSEJOS
+│       │   │         ERE LIBRE DE AGREGA INFORMACION, LA IDEA ES QUE SEA UTIL Y QUE NO PERJUDIQUE LA APP
+│       │   │   
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: ¡El Buca Neural Engine (BNE) es una obra de arte para el rendimiento! Sin embargo,
+│       │   │   tras analizar minuciosamente el código de "buca-website/src/core/engine/graphics.js", he detectado "cables cortados" críticos (Memory Leaks):
+│       │   │   1) En "#initTelemetrySync()", se crea un setInterval "this._stateSyncInterval" para reportar estadísticas, pero NUNCA se limpia con "clearInterval" en "destroy()".
+│       │   │   2) Los observadores "mutationObserver" y "intersectionObserver" de DOM nunca se desconectan ("disconnect()") en "destroy()". Esto acumula consumo de RAM cada vez que se re-inicializa el motor o se cambia de vista.
+│       │   │   Para que no perjudique la app, debemos corregir el método "destroy()" de "graphics.js" limpiando estos timers y observadores según exige "code-hygiene.md". Además, debemos garantizar que las hojas de SASS deshabiliten efectos visuales pesados cuando el motor indique un nivel de rendimiento "eco" (BNE-RULE-001).
+│       │   │   
+│       │   ├── eventBus/       # Canal de mensajería y eventos global para comunicación desacoplada
+│       │   │   │
+│       │   │   └── index.js    #
+│       │   │   
+│       │   │   NOTA: QUIERO OPINIONES DE ESTE DIRECTORIO Y SU FUNCIONES
+│       │   │
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: El EventBus es vital para cumplir con el desacoplamiento de "architect.md". Permite que los módulos
+│       │   │   se comuniquen mediante mensajes en lugar de importarse directamente, evitando dependencias circulares.
+│       │   │   ¡CABLE CORTADO DETECTADO!: El router ("router.js" línea 136) intenta utilizar "eventBus.once('kernel:layout-ready', ...)" 
+│       │   │   para sincronizar el layout, pero el archivo "core/eventBus/index.js" NO tiene implementado el método "once()". Esto provocará
+│       │   │   un crash fatal ("TypeError: eventBus.once is not a function") cuando el usuario intente iniciar sesión e ingresar al workspace.
+│       │   │   Solución: Debemos agregar de inmediato la función "once(event, callback)" en el EventBus para registrar suscripciones de un solo uso.
+│       │   │   
+│       │   ├── logic/          # 
+│       │   │   │
+│       │   │   └── FinanceManager.js    #
+│       │   │
+│       │   │   IDEA LOCAS: BUENO ESTA IDEAS NO SE SI SERIA UTILES PERO COMO SABEMSO LA 
+│       │   │   SEGURIDAD LO ES TODO ESTO ES POR SI SERIA UTIL PERO SON IDEAS DE DIRECTORIO
+│       │   │   Y ARCHIVOS QUE PODRIA SER UTILES PERO HAY QUE TENER CUIDADO DE NO GENERAR 
+│       │   │   PROBLEMAS CON LA APLIACIONES Y SEGURIDAD
+│       │   │   
+│       │   │       ├── pricing/                  # [NUEVO] LÓGICA DE PRECIOS
+│       │   │       │   ├── PriceEngine.js        # Calculadora de "G ap" (Dólar vs BCV)
+│       │   │       │   └── CostBasis.js          # Cálculo de costo de reposición
+│       │   │       └── versioning
+│       │   │           └── FeatureFlags.js       # Controla qué versión del módulo ve el usuario
+│       │   │
+│       │   │   NOTA: POR EL MOMENTO ESTA AREA DESCONOSCO QUE LOGICA AGREGAR YA QUE ESTE ES EL NUCLEO  
+│       │   │         DE LA APLICACION Y SEGURO HABRA LOGICA PERO NO SE QUE ES DESPUES DE TODO POR EL 
+│       │   │         MOMENTO SOLO SERA EL NUCLEO DE LA APP Y LOS MODULOS AUTH Y WORKSPACES SERA PURO  
+│       │   │         EL SYSTEM DE USUARIO Y EL AREA DE TRABAJO Y PULIENDO TODO LO DE LOS DIRECTORIO 
+│       │   │         SHARED Y CORE.
+│       │   │
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: Esta "idea loca" de "pricing/" es OBLIGATORIA y de altísimo valor para el contexto de Venezuela. 
+│       │   │   1) "PriceEngine.js" es excelente para centralizar la tasa del BCV obtenida en "bcv.api.js", calculando automáticamente los precios en dólares y bolívares de forma reactiva y en tiempo real.
+│       │   │   2) "CostBasis.js" es crítico para los comercios locales: calcula el costo de reposición real del inventario considerando la variación de la tasa, garantizando que el comerciante no pierda dinero al reponer stock.
+│       │   │   Tener esto a nivel del Core permite que cualquier módulo (ej: ventas, facturación o reportes) use exactamente la misma matemática de conversión sin duplicar código.
+│       │   │
+│       │   ├── router/         # Sistema modular de enrutamiento SPA y control de vistas en Vanilla JS
+│       │   │   │
+│       │   │   ├── guards.js  #
+│       │   │   ├── router.js  #
+│       │   │   └── routes.js #
+│       │   │
+│       │   │   NOTA: QUIERO OPINIONES DE ESTE DIRECTORIO Y SU FUNCIONES, LOS 2 ARCHIVO ROUTER 
+│       │   │         CONFUNDE UN POCO SUS NOMBRE NO SE QUE IDEA TIENES AL RESPECTO
+│       │   │
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: La confusión de nombres es muy válida. Hay un error tipográfico en este mapa físico:
+│       │   │   El archivo físico real en la carpeta se llama "routes.js" (singular, que almacena el array estático de rutas), mientras que
+│       │   │   "router.js" es la clase/motor que gestiona la History API y el cambio de vistas SPA. 
+│       │   │   Sugerencia: Corregir el nombre en esta documentación de "routers.js" a "routes.js" para que coincida exactamente con la realidad.
+│       │   │   La estructura con "guards.js" para interceptar accesos (verificación de sesión) está perfectamente diseñada para separar responsabilidades.
+│       │   │
+│       │   ├── security/       # Gestión de cifrado local, validación de tokens y control de sesiones
+│       │   │   │
+│       │   │   ├── CryptoWrapper.js  #
+│       │   │   └── DeviceFingerprint.js #
+│       │   │   
+│       │   │   IDEAS:QUE EN REALIDA ESTABA EN LOS PROYECTO LEGACY PERO COMO SABEMOS ALGUNOS
+│       │   │   DE ESTO CODIGO O ARCHIVO FUERO DELEGADO A OTRA AREA NO SE SI ES ULTIL O LO 
+│       │   │   DEJAMOS EN SU RESPECTIVA AREA LA IDEA ES MEJORAR, NO PERJUDICAR Y EVITAR CODIGO
+│       │   │   ESPAGETI Y REPETICION DE CODIGO PERO BUENO NOSE DAME UN COSEJO SOBRE ESTO.
+│       │   │   
+│       │   │       ├── firebase-guard.js         # Bloqueo de costos (Emuladores)
+│       │   │       ├── DeviceFingerprint.js      # Genera/Lee el ID único del dispositivo
+│       │   │       ├── SessionMonitor.js         # Escucha si alguien entró con mi cuenta
+│       │   │       └── MasterKey.js              # Valida el PIN especial del dueño
+│       │   │   
+│       │   │   NOTA: AQUI EN SEGURIDA SOY UN NOVATO DAME SUGERENCIA Y DIME COMO ESTA EL DIRECTORIO Y COMO 
+│       │   │         ESTA FUNCIONADO Y QUE SUGERENCIA ME DAS 
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: ¡El diseño actual es muy robusto para ser tu primera etapa!
+│       │   │   1) "CryptoWrapper.js" es excelente para cifrar los tokens en LocalStorage y que nadie pueda clonar la sesión manipulando la consola.
+│       │   │   2) "DeviceFingerprint.js" es clave para identificar de forma única el navegador y prevenir fraudes de cuentas compartidas.
+│       │   │   Recomendación: Agrega "firebase-guard.js" para forzar la redirección a los emuladores en entorno local (cuidando el Spark $0.00 Plan según "cost-guard.md"). Además, a futuro sugerimos implementar "SessionMonitor.js" para escuchar si una misma cuenta se abre en dos dispositivos distintos en tiempo real mediante subcolecciones activas en Firestore.
+│       │   │
+│       │   ├── services/       # 
+│       │   │   │
+│       │   │   └── NotificationService.js #
+│       │   │
+│       │   │   NOTA: LA VERDA NO TENGO NI IDEA QUE HACE ESTO O COMO SE VISUALIZA EN LA UI 
+│       │   │   YA QUE SOY NUVATO DE CODIGO PERO SE ALGUNA COSA ES UN SERVICIO DE NOTIFICAIONES 
+│       │   │   PERO QUE MAS QUE SE VISUALIZA EN LA INTERFAZ O ES SOLO INTERNO ¿NO TENGO IDEA?
+│       │   │
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: "NotificationService.js" cumple un doble rol (Lógico y Visual):
+│       │   │   - Lógico: Permite que otros módulos disparen alertas mediante código simple como "NotificationService.show('Título', 'Mensaje', 'success')".
+│       │   │   - Visual: Conecta de forma transparente con un componente de la UI global (en "shared/ui/") para pintar "Toasts" translúcidos (estilo Glassmorphism de la marca) que flotan en pantalla y desaparecen solos, o modales de confirmación interactivos.
+│       │   │   Esto garantiza que se cumpla estrictamente la directiva "error-handling.md" (nunca fallar silenciosamente y notificar amigablemente todo suceso o error al usuario).
+│       │   │
+│       │   ├── state/          # Gestor de estados globales de la aplicación
+│       │   │   │
+│       │   │   ├── BaseState.js  #
+│       │   │   ├── global.js  #
+│       │   │   ├── session.js  #
+│       │   │   ├── store.js  #
+│       │   │   └── ui.js #
+│       │   │
+│       │   │   NOTA: BUENO ESTA ARE LA CONOSCO UN POCO PERO NO CASI PERO ERE LIBRE DE OPINAR YA  
+│       │   │   Y QUE ESTA AREA ES LA MEMORIA DE LA APP PERO COMO SABE NO SE TODO NO SE QUE OTRA COSA 
+│       │   │   REALIZA O SI ESTA TAMBIEN UNA MEMORIA VOLATIL O REALIZA OTRA COSA MAS BUENO ERE LIBRE 
+│       │   │   DE OPINAR O SUGERI O CORREGIR O QUE OPINA DE SU ESTRUTURA  HAY ALGO QUE PERJUDIQUE LA APP 
+│       │   │   O  HAY ALGO OCULTO QUE NO ESTAMOS PONIENDO LA IDEA ES EVITAR TENER PROBLEMAS.  
+│       │   │
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: Tu intuición es sumamente correcta: "BaseState.js" actúa como la memoria en RAM de la aplicación y, por defecto, es VOLÁTIL (si recargas la página, se pierde). 
+│       │   │   Para solucionar esto, archivos como "session.js" guardan y recuperan su estado persistente a través del "StorageAdapter" (que decide si guardarlo en LocalStorage o IndexedDB). 
+│       │   │   La estructura actual reactiva es brillante porque permite que los componentes de la interfaz se suscriban (Publish-Subscribe) a los cambios de estado (como hace "ui.js" o "global.js") y se redibujen automáticamente sin re-renderizar toda la página. 
+│       │   │   Solo recuerda desuscribir los listeners en Vanilla JS al desmontar elementos globales para evitar Fugas de Memoria ("code-hygiene.md").
+│       │   │
+│       │   ├── storage/        # Adaptadores para LocalStorage, SessionStorage y Cookies del navegador
+│       │   │   │
+│       │   │   ├── drivers/     #
+│       │   │   │   │
+│       │   │   │   ├── IndexedDBDriver.js   #
+│       │   │   │   └── LocalDriver.js #
+│       │   │   │
+│       │   │   └── StorageAdapter.js 
+│       │   │
+│       │   │   NOTA: AQUI BUENO ES LA BASE DE DATOS PERO COMO SABEMOS LAS BASE DE DATOS NO SON 
+│       │   │   UNA SOLA Y EXISTEN MAS DE UN TIPO EN GENERA PRO EJEMPLO (NoSQL, SQL, Etc) PERO 
+│       │   │   COMO SABEMOS ESTA ES UNA APLICACION PEQUEÑA EN GENERA (100 USUARIOS MAXIMO) NO 
+│       │   │   SE SI ES NECESARIO TANTAS COSAS DE ALMACENAMIENTO BUENO ERE LIBRE DE OPINAR O
+│       │   │   SUGERI O CORREGIR O QUE OPINA DE SU ESTRUTURA HAY ALGO QUE PERJUDIQUE LA APP O 
+│       │   │   HAY ALGO OCULTO QUE NO ESTAMOS PONIENDO LA IDEA ES EVITAR TENER PROBLEMAS.  
+│       │   │   
+│       │   │   BUENO COMO MySQL, PostgreSQL, Oracle Database, MariaDB, Microsoft SQL Server.
+│       │   │   Organizan la información en tablas (como si fueran hojas de cálculo o archivos de 
+│       │   │   Excel) formadas por filas y columnas. La magia de este tipo es que las tablas se 
+│       │   │   conectan entre sí a través de identificadores o claves.
+│       │   │   
+│       │   │   Y BUENO MongoDB (Documental), Apache Cassandra (Clave-valor), Redis (En memoria / 
+│       │   │   clave-valor), Neo4j (De grafos), SERIAN PARA UNA APLICACION MUY GRANDE O NOSE 
+│       │   │   PERO AQUI BUENO DAME TU CONSEJO Y OPINIONES SOBRE EL ESTADO ACTUAL SI ESTAMOS MAL 
+│       │   │   O ESTAMOS PERJUDICADO A LA APP PERO SERIA BUENO CREAR UNA ESTRUTURA CON LA QUE SE 
+│       │   │   PUEDA CONECTAR CON CUALQUIER NO SE TU DIEM QUE OPINA SOBRE TODO ESTA ESTRUTURA LA IDEA 
+│       │   │   EVITAR GENERA PROBLEMA A LA APP Y NO PERJUDICARLA CLARAMENTE LA IDEA ES TENER LIBERTA  
+│       │   │   PARA CUANDO LA APP CRESTA NO SE SI ES MUCHO PERO BUENO.
+│       │   │
+│       │   │
+│       │   │
+│       │   │   NOTA: DUDA DE LA ESTRUTURA ESTA ESTRUTURA ACTUAL Y LA DEL PROYECTO LEGACY
+│       │   │   COMO SABEMOS SI VISUALIZA LA ESTRUTURA LEGACY QUE DIFERENCIA HAY EN LA 
+│       │   │   LA NUESTRA POR LO TANTO INVESTIGA SI A LA NUESTRA LE FALTA ALGO RECUERDA 
+│       │   │   LA IDEA ES MEJORAR O OPTIMIZA NO PERJUDICAR LA APP
+│       │   │     ├── database.js               # Base de datos
+│       │   │     ├── cache/                    # Cache de datos
+│       │   │     │   └── queryCache.js         # Cache de consultas
+│       │   │     ├── adapters/                 # Adapters para diferentes tipos de almacenamiento
+│       │   │     │   ├── firebase.adapter.js   # Adapta Firebase para guardar datos
+│       │   │     │   ├── local.adapter.js      # Adapta localStorage para guardar datos
+│       │   │     │   └── indexedDb.adapter.js  # Adapta IndexedDB para guardar datos
+│       │   │     └── migrations/               # Migraciones de datos
+│       │   │        ├── schema.js          # Migración para guardar datos
+│       │   │        └── device_registry.js # Migración para guardar dispositivos
+│       │   │
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: ¡Esta arquitectura de almacenamiento es una decisión excelente!
+│       │   │   1) No es demasiado compleja, al contrario: como los navegadores no admiten SQL tradicional nativo de forma óptima (WebSQL está obsoleto), usar "IndexedDB" (NoSQL integrado del navegador) como base de datos de alto rendimiento local para almacenar el catálogo de productos o ventas offline, junto con "LocalStorage" para ajustes rápidos (como el tema oscuro), es la mejor combinación.
+│       │   │   2) "StorageAdapter.js" actúa como un orquestador transparente (patrón Driver): si el dispositivo es muy antiguo y no soporta IndexedDB, cae automáticamente a LocalStorage sin romper la app.
+│       │   │   3) Sobre la duda de Firebase vs SQLite/MySQL: al ser una app offline-first de Spark Plan ($0.00 USD), Firestore web SDK ya maneja por debajo una persistencia offline muy potente sin costo adicional. No es necesario añadir SQLite ni servidores SQL costosos en el cliente.
+│       │   │
+│       │   ├── sync/           # Algoritmos de sincronización de datos fuera de línea y caché local
+│       │   │
+│       │   │   NOTA: ESTO ARCHIVO SON DEL PROYECTO LEGACY PERO NO SE SI ESTO TRAERIA
+│       │   │   PROBLEMAS O MAS DESORDE DEL CODIGO O HAY QUE INVESTIGA PARA VER QUE PASA 
+│       │   │   CON NUESTRO CODIGO SI ESTO YA ESTA O NOSOTRO NO LO TENEMOS O FALTA ALGO QUE 
+│       │   │   NO TENEMOS O NOS FALTA ALGO
+│       │   │       ├── queue.store.js            # Cola de datos para sincronizar
+│       │   │       ├── synchronizer.js           # Sincronizador de datos
+│       │   │       └── conflict.js               # Resolución de conflictos
+│       │   │
+│       │   │   NOTA: NO EXISTEN DIRECTORIO SOLO SE DEJO PARA PENSAR COMO TRATAREMOS ESTO DEPUES
+│       │   │   DE TODO ESTA CARPETA ES IMPORTANTE EN OPININES LOGICAS PERO DAME TU CONSEJO Y ALLUDA
+│       │   │   PARA VER COMO TRATAMOS ESTO SIN PERJUDICR TODO EL PROYECTO LA APLICACION Y LOS RECURSOS
+│       │   │   
+│       │   └── middleware/     # Interceptores de peticiones y guardias de seguridad en rutas
+│       │
+│       │       NOTA: NO EXISTEN DIRECTORIO SOLO SE DEJO PARA PENSAR COMO TRATAREMOS ESTO DESPUES
+│       │       DAME UNA ALLUDA AQUI Y IDEAS COMO TRATAREMOS ESTO EN EL DIRECTORI /CORE/
+│       │
+│       │       COMENTAR AQUI:
+│       │       [Antigravity]: En Vanilla JS SPA, no se requiere una carpeta compleja de middlewares físicos.
+│       │       Podemos centralizar los middlewares de la siguiente manera:
+│       │       1) Guards en el Router (router/guards.js) para interceptar transiciones de rutas.
+│       │       2) Interceptores en el cliente HTTP (api/BaseClient.js) para interceptar peticiones de red (ej. inyección del token bearer).
+│       │       3) Filtros en el EventBus para canalizar/validar acciones de manera desacoplada.
+│       │
+│       ├── shared/     # Componentes, estilos base SASS y utilidades compartidos entre módulos
+│       │   │
+│       │   ├── hooks/  #
+│       │   │   │
+│       │   │   ├── useBNE.js   #
+│       │   │   └── useModal.js #
+│       │   │
+│       │   │   NOTA: COMO SABEMOS TENEMOS ESTO EN EL PROYECTO LEGACY NO SE SI ES UTIL PERO 
+│       │   │   HAY QUE SABER QUE HABECE HAY COSA QUE NO SE UTILIZAN O NO LE PRESTAMOS ATENCION
+│       │   │   NO SE SI ESTO NOS PERJUDICA A LA APP O NO 
+│       │   │   ├── usePricing.js             # Hook que usa el PriceEngine
+│       │   │   ├── useDevice.js              # Hook para info del dispositivo
+│       │   │   └── useDraggable.js           # Hook para arrastrar elementos
+│       │   │
+│       │   │
+│       │   │   NOTA: NO SE PARA QUE ES ESTO NO TENGO IDEA Y NO SE SI LA APP ESTA USANDO ESTO
+│       │   │   INVESTIGA , VERIFICA QUE SI ESTO SE ESTA UTILIZANDO O SI ES UTIL O PERJUDICA A 
+│       │   │   LA APLICAICON
+│       │   │
+│       │   │   COMENTAR AQUI:
+│       │   │   [Antigravity]: Los "hooks" en Vanilla JS son sumamente útiles y no perjudican a la aplicación, ¡al contrario! 
+│       │   │   Son funciones reutilizables que encapsulan lógica reactiva y la asocian a un estado. Por ejemplo:
+│       │   │   - "useModal.js" gestiona la lógica de apertura, cierre y datos de un diálogo flotante de forma uniforme para cualquier vista.
+│       │   │   - "useBNE.js" sirve para conectarse con el motor gráfico (Buca Neural Engine) y escuchar estadísticas en tiempo real (como FPS).
+│       │   │   Promueven la reutilización de código (evitan código espagueti) y facilitan la desuscripción de eventos al destruirse el elemento del DOM, lo cual es vital para cumplir con el estándar "code-hygiene.md" (prevenir Memory Leaks).
+│       │   │
+│       │   ├── pages/  #
+│       │   │   │
+│       │   │   ├── Error401.js   #
+│       │   │   ├── Error403.js   #
+│       │   │   └── Error404.js   #
+│       │   │
+│       │   ├── styles/ #
+│       │   │   │
+│       │   │   ├── neural/   #
+│       │   │   │   │
+│       │   │   │   ├── abstrats/   #
+│       │   │   │   │   │
+│       │   │   │   │   ├── _index.scss   #
+│       │   │   │   │   ├── _mixins.scss   #
+│       │   │   │   │   └── _variables.scs #
+│       │   │   │   │
+│       │   │   │   ├── base/   #
+│       │   │   │   │   │
+│       │   │   │   │   ├── _animations.scss   #
+│       │   │   │   │   ├── _elements.scss   #
+│       │   │   │   │   ├── _global.scss   #
+│       │   │   │   │   ├── _index.scss   #
+│       │   │   │   │   ├── _reset.scss   #
+│       │   │   │   │   └── _responsive.scss #
+│       │   │   │   │
+│       │   │   │   ├── components/   #
+│       │   │   │   │   │
+│       │   │   │   │   ├── _avatar.scss   #
+│       │   │   │   │   ├── _badges.scss   #
+│       │   │   │   │   ├── _buttons.scss   #
+│       │   │   │   │   ├── _dock-premium.scss    #
+│       │   │   │   │   ├── _dropdowns.scss   #
+│       │   │   │   │   ├── _huds.scss   #
+│       │   │   │   │   ├── _icons.scss   #
+│       │   │   │   │   ├── _index.scss   #
+│       │   │   │   │   ├── _modals.scss   #
+│       │   │   │   │   ├── _panels.scss   #
+│       │   │   │   │   ├── _performance-modal.scss   #
+│       │   │   │   │   ├── _pills.scss   #
+│       │   │   │   │   ├── _rate-modal.scss   #
+│       │   │   │   │   ├── _ticker.scss   #
+│       │   │   │   │   └── _widgets.scss # 
+│       │   │   │   │
+│       │   │   │   ├── layout/   #
+│       │   │   │   │   │
+│       │   │   │   │   ├── _dock.scss   #
+│       │   │   │   │   ├── _footer.scss   #
+│       │   │   │   │   ├── _header.scss   #
+│       │   │   │   │   ├── _huds.scss   #
+│       │   │   │   │   ├── _index.scss   #
+│       │   │   │   │   ├── _workspace_premium.scss   #
+│       │   │   │   │   └── _workspace.scss #
+│       │   │   │   │
+│       │   │   │   ├── themes/   #
+│       │   │   │   │   │
+│       │   │   │   │   ├── _eco-mode.scss   #
+│       │   │   │   │   └── _index.scss #
+│       │   │   │   │
+│       │   │   │   └── utilities/ #
+│       │   │   │       │
+│       │   │   │       ├── _eco-mode.scss   #
+│       │   │   │       └── _index.scss #
+│       │   │   │
+│       │   │   ├── _buca-bootstrap.scss  #
+│       │   │   └── main.scss   #
+│       │   │
+│       │   │   NOTA: AQUI HAY QUE ORGANIZAR  LAS COSA POR EJEMPLO ESO DE LLAMAR AL DOCK
+│       │   │   dock_premiun.scss HAY QUE CORREGIR ESTO Y LLAMARLO NORMAL NADA DE ESO DE 
+│       │   │   PRO, PREMIUN, ECT.TAMBIEN SOBRE LOS COMPONENTES HAY QUE ORGANIZAR TODO NO
+│       │   │   SE SI ESTA MAL ORGANIZADO HAY QUE SEPARAR LO PERSONALIZADO DIGO YO NO SE NADA 
+│       │   │   DE CSS O SASS PERO SE QUE LA IDEA ES TENER LA COSA ORDENADA Y AGRUPADA DIGO YO 
+│       │   │   NO SE COLOCA LOS NOMBRE DE LOS ARCHIVO DE FORMA NORMAL AHORA PRO EJEMPLO TENEMOS
+│       │   │   RATE MODAL Y PERFOMANCE MODAL NO SE SI HAY UN CSS DE MODAL GLOBAL QUE PERMITA XS,  
+│       │   │   SM, MD, LG, XL, XXL. SI ESTUDIAMOS A BOOSTRAP EN SU ULTIMA VERSION HAY MUCHAS COSA  
+│       │   │   QUE NO ESTAMOS UTILIZADO LA IDEA ES UTILIZA A BOOSTRAP COMO BASE UTILIZA SU CODIGO 
+│       │   │   SASS COMO ESTRATEGIA PARA NOSOTRO PERSONALIZAR TODO Y SUPUESTO EVITAR CREAR CODIGO 
+│       │   │   REPETIDO QUE YA ESTA ALLY BUENO NO SOY ESPERTO EN BOOSTRAP PERO SE QUE EL CSS QUE 
+│       │   │   TENEMOS PERSONALIZADO NO ESTA COMPLETO Y NO ESTAMSO UTILIZANDO TODO EL POTENCIAL
+│       │   │   LA IDEA ES AHORRANO TODO LO POSIBLE Y EVITAR CREAR MAS CODIGO DEL INNECESARIO.
+│       │   │ 
+│       │   ├── ui/     #
+│       │   │   │
+│       │   │   ├── components/   #
+│       │   │   │   │
+│       │   │   │   ├── header/   #
+│       │   │   │   │   │
+│       │   │   │   │   ├── LanguagePanel.js   #
+│       │   │   │   │   ├── NotificationsPanel.js   #
+│       │   │   │   │   └── ProfinePanel.js #
+│       │   │   │   │
+│       │   │   │   ├── hub/   #
+│       │   │   │   │   │
+│       │   │   │   │   └── BusinessHub.js #
+│       │   │   │   │
+│       │   │   │   ├── navegation/   #
+│       │   │   │   │   │
+│       │   │   │   │   └── NewsTicker/  #
+│       │   │   │   │       │
+│       │   │   │   │       ├── index.js   #
+│       │   │   │   │       └── TickerLogic.js #
+│       │   │   │   │
+│       │   │   │   └── widgets/ #
+│       │   │   │
+│       │   │   ├── layouts/   #
+│       │   │   │   │
+│       │   │   │   ├── components/   #
+│       │   │   │   │   │
+│       │   │   │   │   ├── DockableNavbar.js  #
+│       │   │   │   │   ├── TopBar.js  #
+│       │   │   │   │   └── WidgetGrid.js  #
+│       │   │   │   │
+│       │   │   │   ├── AuthLayout.js #
+│       │   │   │   └── MainLayout.js #
+│       │   │   │
+│       │   │   ├── overlays/   #
+│       │   │   │   │
+│       │   │   │   ├── EmulatorModal.js #
+│       │   │   │   ├── PerformanceModal.js #
+│       │   │   │   └── RateModal.js #
+│       │   │   │
+│       │   │   ├── pages/   #
+│       │   │   │   │
+│       │   │   │   └── Error404.js #
+│       │   │   │
+│       │   │   └── widgets/ #
+│       │   │       │
+│       │   │       └── WidgetTemplate.js #
+│       │   │   
+│       │   └── utils/  # 
+│       │      │
+│       │      ├── debounce.js #
+│       │      ├── formatters.js #
+│       │      ├── performance.js.js #
+│       │      ├── security.js #
+│       │      ├── ui-bridge.js #
+│       │      └── validators.js #
+│       │ 
+│       │   NOTA: LAS UTILIDADES AQUI HAY ALGUNAS PERO SE QUE PARA NUESTRO APP QUE ESTA
+│       │   EMPESANDO ESTO SEGURO QUE NO LA TENGO O SI PORO NO SE SI ESTA EN FUNCIONALIDAD
+│       │   BUENO HAY UN ARCHIVO QUE ES UI-BRIDGE-JS NO SE QUE ES ESTO SE ME OLVIDO BUENO 
+│       │   SI ES PERJUDICIAL BUSCAMOS LA FORMA DE ELIMIANRLO Y SI ALGUEIN LO UTILIZABA SE 
+│       │   ELIMINA ESO O SE CORREGIR DE ALGUAN FORMA LA IDEA ES QUE SI CAMBIAMOS ALGO SE 
+│       │   HAY QUE ASEGURAR DE QUE SI CAMBIAMOS ALGO O ELIMINAMOS ALGO HAY QUE ASEGURA QUE 
+│       │   OTRO ARCHIVOS NO SE PERJUDIQUEN POR CAMBIAR ALGO O ELIMINAR ALGO 
+│       │
+│       │  COMENTAR AQUI:
+│       │  [Antigravity]: "ui-bridge.js" es sumamente útil, pero tiene un propósito muy específico:
+│       │  Sirve como un "puente" que expone funciones (como window.toggleTheme o window.openModal) directamente al objeto global "window".
+│       │  Esto es necesario porque la aplicación renderiza interfaces mediante plantillas de texto HTML, y los manejadores inline como "onclick='toggleTheme()'" no pueden ver el código empaquetado por Vite a menos que esté en "window".
+│       │  ¿Es perjudicial? No lo es, siempre y cuando solo se use para controles globales básicos (tema, apertura de modales de asistencia, scroll del dock). Para lógica interactiva avanzada de los módulos, es mucho más limpio y seguro programar escuchas de eventos internos de forma modular ("addEventListener") y removerlas al salir, evitando la sobrepoblación del objeto global "window".
+│       │
+│       │
+│       └── modules/            # Módulos de lógica y UI de la aplicación (Estructura modular)
+│           │
+│           ├── auth/           #
+│           │   │   
+│           │   ├── index.js    # 
+│           │   ├── routes.js   # 
+│           │   │ 
+│           │   ├── components/ # 
+│           │   │   │
+│           │   │   ├── DeviceChallenge.js #
+│           │   │   ├── LoginForm.js #
+│           │   │   ├── PINForm.js #
+│           │   │   └── SessionDashboard.js #
+│           │   │
+│           │   ├── constants/  # 
+│           │   │   │
+│           │   │   └── auth.constants.js #
+│           │   │
+│           │   ├── logic/      # 
+│           │   │   │
+│           │   │   ├── AuthValidator.js #
+│           │   │   └── SessionManager.js #
+│           │   │
+│           │   ├── pages/      # 
+│           │   │   │
+│           │   │   ├── LoginPage.js #
+│           │   │   ├── ProfilePage.js #
+│           │   │   ├── RecoveryPage.js #
+│           │   │   ├── RegisterPage.js #
+│           │   │   └── SettingsPage.js #
+│           │   │
+│           │   ├── services/   # 
+│           │   │   │
+│           │   │   ├── AuthService.js #
+│           │   │   └── FirebaseProvider.js #
+│           │   │
+│           │   └── style/      # 
+│           │       │
+│           │       └── auth.scss #
+│           │ 
+│           ├── workspace/      #
+│           │   │   
+│           │   ├── index.js    # 
+│           │   ├── routes.js   # 
+│           │   │ 
+│           │   ├── components/ # 
+│           │   │   │
+│           │   │   └── WidgetContainer.js #
+│           │   │
+│           │   ├── constants/  # 
+│           │   │   │
+│           │   │   └── workspace.constants.js #
+│           │   │
+│           │   ├── logic/      # 
+│           │   │   │
+│           │   │   └── WidgetOrchestrator.js #
+│           │   │
+│           │   ├── pages/      # 
+│           │   │   │
+│           │   │   ├── DashboardPage.js #
+│           │   │   └── WorkspacePage.js #
+│           │   │
+│           │   ├── services/   # 
+│           │   │   │
+│           │   │   └── workspace.js #
+│           │   │   
+│           │   │   NOTA: ESTE SERVICIO NO EXISTEN PERO PODEMOS A FUTURO CREARLO AUQUE NO 
+│           │   │   SE SI ES NECESARIO YA QUE POR EL MOMENTO ESTAMOS ES EMPESADO Y NO EXISTE 
+│           │   │   EL ARCHIVO PERO SEGURO SE CREARA CUANDO LO NECESITEMOS AUQUE NO SE CUANDO
+│           │   │   
+│           │   └── style/      # 
+│           │       │
+│           │       └── workspace.scss #
+│           │ 
+│           │
+│           └── [modulo]/       # Módulo independiente: index.js, [modulo].routes.js, pages/, services/ y components/
+│           
+│         NOTA: BUENO AQUI LOS MODULOS LOS MODULOS ES UNA DE LA AREA MAS IMPORTANTES COMO SABEMOS 
+│         LOS MODULOS NO SON SOLO HERRAMIENTAS SON MODULOS UNIVERSALES EN LA QUE TIENE SU PROPOCITO
+│         FUNCIONAL Y VISUAL PERO TAMBIEN TIENE COMO LA FINALIDAD DE INTERACTUAR CON OTRO MODULOS BASADO 
+│         EN LOS PERMISO DEL NUCLEO YA QUE NO PODEMSO PERMITIR QUE ENTRE MODULOS PASE ALGO SI SABE QUE ES YA 
+│         TENEMOS COMO FINALIDAD PROTEGER LOS DATOS Y TODO LO QUE INTERATUA ENTRE SI.           
+│         
+│         LO BUENO DE LOS MODULOS ES QUE PERMITE EMPORTA Y IMPORTA HERRAMIENTAS ENTRE SI Y ESTO 
+│         EVITA REPETIR CODIGO EL MODULO AUTH ES UNO DE LOS MAS UTILIZADO YA QUE SU PROPOCITO ES AUTENTIFICAR 
+│         Y ESO ES LO MAS IMPORTANTE EN LA PARTE DE VALIDA CIERTAS ACCIONES POR SUPUESTO NOSOTRO SI DESARROLAMO
+│         UN MODULO TEMEMS QUE TENER EN CUENTA VARIAS COSA UNA ES SI UN CODIGO QUE ESTAMOS CREADO ES REUTILIABLE         
+│         ESTE NO SE INCORPORARIA DE FORMA MODULAR YA QUE OTRO MODULOS LO UTILIZARIA POR LO TANTO SE PODRIA EN FORMA         
+│         GLOBAL PARA QUE CUALQUIER MODULO LO UTILICE ESTO SI NECESITAMOS TENER CUIDADO NO SOLO EN EL MODULO A DESARROLLA          
+│         SI NO QUE AL NIVEL INTERNO.          
+│                  
+│         ESTO APLICA PARA CUALQUIER AREA SEA CSS (SASS), SERVICES, LOGICS, COMPONENTS  Y MAS       
+│         POR LO TANTO HAY QUE SIEMPRE VERIFICAR ESTO PARA EVITAR DUPLICAR COSA Y GENERA MAS PROBLEMA A LA APLICAICON         
+│         COMENTAR AQUI:
+│         [Antigravity]: Exacto. Los módulos (como auth y workspace) deben estar 100% aislados. Ningún módulo debe importar
+│         un componente de otro módulo directamente. Toda la comunicación entre ellos debe ocurrir a través del EventBus o
+│         actualizando estados compartidos en el State Store (store.js). Esto evita que se "corten los cables" si eliminas un módulo.
+│ 
+├── docs/                       # Documentación técnica, manuales, versiones y directivas del proyecto
+│   ├── design                  # Especificaciones del diseño UX/UI, hojas de estilo base y branding
+│   │   │
+│   │   └── buca-style.txt      # Especificaciones técnicas y visuales de UX/UI (Concepto "Solid Physical Glass")
+│   │
+│   ├── structure               # Planos de arquitectura de datos y jerarquías de directorios del sistema
+│   │   │
+│   │   ├── buca-database.txt   # Estructura del esquema de bases de datos de Firestore en su v4.0.0
+│   │   └── buca-modular.txt    # Estructura detallada de directorios y mapas de archivos del proyecto
+│   │
+│   ├── *-*.md                  # Archivos dinámicos en formato Markdown (planes, notas, tareas e incidencias)
+│   └── *-*.txt                 # Archivos estáticos de texto plano (registros, historial de versiones y auditorías)
+│   
+│   NOTA: EN EL FUTURO SE INTEGRARÁN MÁS CRITERIOS PARA ESTA CARPETA, YA QUE ES LA MEMORIA TÉCNICA
+│         DEL SISTEMA BUCA: PLANES DE ACCIÓN, VERSIONES, DISEÑOS, REPORTES DE INCIDENCIAS,
+│         MANUALES DE USO E IDEAS QUE SE ENCUENTRAN EN DESARROLLO O POR PLANIFICAR.
+│         
+│         COMENTAR AQUI:
+│         [Antigravity]: Esta carpeta "docs/" es la Biblia técnica del proyecto. Sugiero agregar dos plantillas a futuro:
+│         1. docs/troubleshooting.md -> Para registrar soluciones rápidas a errores locales del emulador o producción.
+│         2. docs/api-contracts.md -> Para mapear las firmas de datos de Firestore y los payloads esperados de las Cloud Functions.
+│ 
+├── functions/                  # Backend serverless a través de Cloud Functions de Firebase en Node.js
+├── media/                      # Almacén de archivos multimedia como imágenes, audio, video y banners
+├── node_modules/               # Dependencias de paquetes y librerías externas instaladas por NPM
+├── scratch/                    # Archivos temporales de pruebas rápidas, scripts borrador y notas de trabajo
+└── scripts/                    # Scripts de automatización de compilación, migraciones de base de datos y CI/CD

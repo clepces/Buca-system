@@ -1,0 +1,134 @@
+==========================================================================
+MASTER DOC: ESPECIFICACIONES TÉCNICAS INTEGRALES - B.U.C.A. ERP V3 (GLASS)
+==========================================================================
+
+1. CONCEPTO DE DISEÑO: "SOLID PHYSICAL GLASS"
+----------------------------------------------
+No es solo transparencia; es simular un material físico. La interfaz debe 
+sentirse como bloques de vidrio pulido con profundidad, refracción y 
+respuesta táctil, optimizado para la gestión de datos masivos.
+
+2. ARQUITECTURA VISUAL (CSS & RENDER)
+--------------------------------------
+* Frosted Glass: backdrop-filter: blur(20px) + saturate(180%). Evita el 
+  efecto "sucio" y mantiene la viveza de los colores del fondo.
+* Specular Highlights: Gradientes lineales a 45° (opacidad 0.1) para 
+  simular reflejos de luz natural en el cristal.
+* Inner Glow: box-shadow: inset de 1px para dar grosor al borde del vidrio.
+* Noise Texture (2%): Capa de grano casi invisible para eliminar el 
+  "banding" en degradados y mejorar la sensación orgánica.
+* Mouse Tracking Glow: Resplandor radial dinámico que sigue al cursor por 
+  debajo de la superficie de cristal para iluminar el foco del usuario.
+
+3. ANATOMÍA DE FORMULARIOS Y CAMPOS (INPUTS/SELECTS)
+----------------------------------------------------
+* Focus State: Resplandor externo (Glow) + incremento de contraste.
+* Floating Labels: Etiquetas que se desplazan y ganan peso (font-weight: 600) 
+  al activar el campo, mejorando la legibilidad.
+* Adaptive Opacity: El fondo del input cambia su opacidad según el fondo 
+  detrás para asegurar un contraste mínimo de 4.5:1.
+* Menús Flotantes (Selects): Separación de 5px-10px con mayor desenfoque 
+  para crear jerarquía visual (efecto de capas superpuestas).
+* Checkboxes de Cristal: Fondo translúcido con marcas de verificación 
+  en gradientes vibrantes para claridad de estado.
+
+4. COMPORTAMIENTO Y LÓGICA DE BOTONES (EL MOTOR)
+------------------------------------------------
+* Estado Normal: Biselado y cristalino.
+* Hover: Aumento de refracción y luz perimetral.
+* Active (Click): Efecto de hundimiento físico (scale 0.95) con sombras 
+  internas profundas.
+* Loading State (Anti-Bugs): 
+  - Bloqueo total de 'pointer-events' para evitar envíos duplicados.
+  - Animación "Conic Gradient Border": Un haz de luz circular recorre el 
+    borde del botón mientras se procesa la solicitud.
+* Disabled: Filtro de escala de grises y cursor de bloqueo (not-allowed).
+
+5. ESTRUCTURA Y ECOSISTEMA (UX AVANZADA)
+----------------------------------------
+* Bento Grid Layout: Organización del ERP en bloques modulares y limpios.
+* Mesh Gradients Dinámicos: Fondos con colores en movimiento lento (30s) 
+  para dar vida al cristal.
+* Soft Glass Hybrid: Combinación de sombras neomórficas sutiles para que 
+  el cristal parezca un bloque sólido y no una lámina delgada.
+* Progressive Blur: Aumento del desenfoque en procesos largos para reducir 
+  distracciones visuales.
+
+6. REGLAS DE ORO DE IMPLEMENTACIÓN
+----------------------------------
+* Legibilidad: El diseño nunca debe sacrificar la lectura de datos.
+* Performance: Uso de capas de GPU (transform: translateZ) para animaciones.
+* Documentación: Comentarios detallados en cada componente (Estándar 2025).
+
+7. SISTEMA DE FEEDBACK Y RESPUESTA (POST-ACCIÓN)
+------------------------------------------------
+* Glass Toasts: Notificaciones translúcidas con "Edge Glow" de color:
+    - Verde Esmeralda (Success): Guardado exitoso.
+    - Rojo Rubí (Error): Error de validación o servidor.
+* Haptic Feedback Visual: Breve destello en el borde del contenedor 
+  al completar una tarea.
+
+8. ACCESIBILIDAD Y RENDIMIENTO CRÍTICO
+--------------------------------------
+* Fallback Solid: Si el navegador no soporta 'backdrop-filter', el sistema 
+  debe mostrar colores sólidos con opacidad (RGBA) sin romper la UI.
+* Contrast Guard: Sistema de ajuste de opacidad dinámica para cumplir 
+  con normas WCAG en pantallas de alta luminosidad.
+* Layer Management: Limitar el uso de 'blur' en móviles para evitar el 
+  sobrecalentamiento del dispositivo (Motor eficiente).
+
+9. JERARQUÍA Y PROFUNDIDAD (SISTEMA DE CAPAS)
+-----------------------------------------------
+* Layering Logic: 
+    - Nivel 1 (Base): Blur 20px (Dashboard).
+    - Nivel 2 (Modales): Blur 12px + Border Glow intenso.
+    - Nivel 3 (Pop-overs): Blur 5px + Sombra profunda.
+* Focus Dimming: Cuando una ventana modal de cristal se abre, el fondo 
+  detrás aumenta su desenfoque para centrar la atención.
+
+10. VISUALIZACIÓN DE DATOS (TABLAS Y REPORTES)
+-----------------------------------------------
+* Zebra Glass Rows: Filas de tablas con opacidades alternas (5% y 8%) 
+  para facilitar la lectura horizontal sin líneas sólidas molestas.
+* Sticky Glass Headers: Cabeceras de tabla que se quedan fijas al hacer 
+  scroll, manteniendo un desenfoque constante sobre los datos que pasan.
+* Data Contrast: Uso de fuentes Sans-Serif con suavizado tipográfico 
+  específico para entornos translúcidos.
+
+11. IDENTIDAD Y BRANDING INTEGRADO
+-----------------------------------------------
+* Etched Branding: Logos con efectos de máscara (mask-image) que simulan 
+  grabado en ácido sobre el vidrio.
+* Glass Watermarks: Marcas de agua sutiles en los reportes para 
+  protección de datos, integradas en la capa de refracción.
+
+12. SEMÁNTICA DE DATOS Y ESTADOS DE CAMBIO
+-----------------------------------------------
+* Dirty State Detection: Campos modificados muestran un borde con 
+  "Glow Ámbar" sutil para indicar que hay cambios pendientes de guardar.
+* Critical Action Confirmation: Los diálogos de borrado o anulación usan 
+  un cristal "Rojo Esmerilado" para generar alerta psicológica inmediata.
+
+13. OPTIMIZACIÓN DE RENDIMIENTO (DYNAMICS)
+-----------------------------------------------
+* Adaptive Blur: En listas de más de 100 elementos, el blur se desactiva 
+  en las celdas individuales y se mantiene solo en el contenedor padre 
+  para garantizar 60 FPS (Efecto Ferrari en el motor).
+
+14. PERSISTENCIA DE CONTEXTO VISUAL (EL TOQUE FINAL)
+-----------------------------------------------------
+* Skeleton Transitions: Transiciones suaves de cristal "vacío" a "lleno" 
+  evitando saltos bruscos de pantalla (Layout Shift).
+* Glass Scrollbars: Barras de desplazamiento translúcidas que solo 
+  aparecen al interactuar, evitando romper la estética de bloque sólido.
+
+15. ADAPTABILIDAD ATMOSFÉRICA Y MODOS DE VISIÓN
+-----------------------------------------------------
+* Circadian Glass: Ajuste automático de la temperatura de color de los 
+  reflejos (Cálido/Frío) según la hora local del usuario.
+* Ultra-Dark Glass Mode: Optimización de contraste para trabajo nocturno 
+  donde el cristal absorbe el 90% de la luz del fondo (Deep Ink Glass).
+* Focus Pulse: El borde del contenedor activo emite una pulsación 
+  lumínica casi imperceptible (cada 60s) para mantener el enfoque.
+==========================================================================
+==========================================================================
