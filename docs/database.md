@@ -1,32 +1,48 @@
 # Esquema de Base de Datos Firestore v4.0.0 (B.U.C.A. AI)
 
-> **Documento:** Estructura de Datos NoSQL, Colecciones, Subcolecciones y Reglas de Optimización  
+> **Documento:** Estructura de Datos NoSQL, Colecciones, Subcolecciones, Badges y Reglas de Optimización  
 > **Versión:** 4.0.0 (Master de Producción)  
-> **Motor:** Google Cloud Firestore (Modo Nativo)
+> **Motor:** Google Cloud Firestore (Modo Nativo)  
+> **Filosofía de Arquitectura:** Resiliencia Anti-Crisis, Aislamiento Multi-Tenant y Coste Operativo $0.00 USD
 
 ---
 
 ## 1. Reglas de Optimización para la Capa Gratuita (Spark Free Plan)
 
-Para garantizar la viabilidad del presupuesto operativo de **$0.00 USD** (50,000 lecturas y 20,000 escrituras diarias):
-1. **Contadores Acumulados por Snapshot:** Prohibido actualizar documentos principales en cada venta individual. Los totales de ventas se acumulan en memoria/estado local y se consolidan en Firestore una vez al día o al cerrar el turno de caja (`cash_shifts`).
-2. **Paginación Obligatoria con Cursores:** Toda consulta de listado (productos, clientes, ventas) debe usar `limit(20)` y `startAfter(ultimoDocumento)`. Prohibido el uso de consultas abiertas (`getDocs` sin límites).
-3. **Caché en Cliente:** Las configuraciones estáticas y tasas de cambio se leen una sola vez al iniciar sesión y se almacenan en `StorageAdapter` (IndexedDB / LocalStorage) con un TTL de 4 horas.
-4. **Nomenclatura en Plural:** Todas las colecciones principales se nombran estrictamente en minúsculas y plural (`users`, `businesses`, `products`, `sales`).
+Para operar de forma indefinida con un presupuesto de **$0.00 USD** (50,000 lecturas diarias, 20,000 escrituras diarias y 1 GB de almacenamiento):
+
+1. **Patrón de Contadores por Snapshot:** Prohibido actualizar el documento raíz del negocio en cada ticket de venta individual. Los totales diarios se mantienen en memoria del navegador o en un documento de turno (`cash_shifts`), consolidándose en el negocio una sola vez al día.
+2. **Paginación Obligatoria con Cursores:** Todo listado de datos (`products`, `sales`, `customers`, `purchases`) implementa `limit(20)` y `startAfter(ultimoDoc)`. Se prohíben lecturas abiertas (`getDocs` sin límites).
+3. **Caché en Cliente con TTL:** Datos estáticos de configuración y tasas se leen una sola vez al inicio de sesión y se persisten en `StorageAdapter` (IndexedDB / LocalStorage) con un TTL de 4 horas.
+4. **Atomicidad con `runTransaction`:** Los consecutivos de facturas (`sequences`) deben incrementarse mediante transacciones atómicas para prevenir duplicados en ventas concurrentes.
+5. **Nomenclatura Canónica en Plural:** Todas las colecciones y subcolecciones se nombran estrictamente en minúsculas y plural (`users`, `businesses`, `products`, `sales`, `warehouses`, `cash_shifts`).
 
 ---
 
-## 2. Mapa Global de Colecciones
+## 2. Mapa Global de Colecciones y Relaciones
+
+El sistema B.U.C.A. AI organiza los datos en colecciones raíz globales y subcolecciones aisladas por inquilino (*Multi-Tenant Scoped*):
 
 ```mermaid
 erDiagram
-    USERS ||--o{ WORKSPACES_CLAIMS : posee
+    USERS ||--o{ WORKSPACES : pertenece
     USERS ||--o{ TRUSTED_DEVICES : autoriza
+    USERS ||--o{ ACTIVITY_LOG : registra
+
+    BUSINESSES ||--|{ STAFF : emplea
     BUSINESSES ||--|{ PRODUCTS : cataloga
-    BUSINESSES ||--|{ WAREHOUSES : almacena
+    BUSINESSES ||--|{ WAREHOUSES : distribuye
     BUSINESSES ||--|{ SALES : procesa
-    BUSINESSES ||--|{ CASH_SHIFTS : controla
-    SALES ||--|{ SALE_ITEMS : contiene
+    BUSINESSES ||--|{ CASH_SHIFTS : concilia
+    BUSINESSES ||--|{ PURCHASES : abastece
+    BUSINESSES ||--|{ CUSTOMERS : fideliza
+    BUSINESSES ||--|{ SUPPLIERS : contrata
+    BUSINESSES ||--|{ EXPENSES : liquida
+    BUSINESSES ||--|{ SEQUENCES : numera
+    BUSINESSES ||--|{ CREDIT_NOTES : reembolsa
+    
+    PRODUCTS ||--o{ INVENTORY_LOTS : rastrea
+    SALES ||--|{ SALE_PAYMENTS : liquida
 
     USERS {
         string user_id PK
@@ -34,102 +50,274 @@ erDiagram
         map subscription_master
         map workspaces
         map security
+        map trusted_devices
     }
 
     BUSINESSES {
         string business_id PK
+        string owner_id FK
         map info
         map address
+        map config
         map stats_accumulated
-        string owner_id FK
     }
 
     PRODUCTS {
         string product_id PK
         string sku
-        string name
+        string barcode
         number price_usd
-        number cost_usd
+        number cost_replacement
         number stock_total
     }
 
     SALES {
         string sale_id PK
         string invoice_number
+        string cashier_id FK
         number total_usd
         number total_ves
-        string cashier_id FK
-        datetime created_at
+        datetime timestamp
     }
 ```
 
 ---
 
-## 3. Diccionario de Colecciones Principales
+## 3. Matriz de Colecciones, Badges y Roles
 
-### 3.1. Colección `/global_config/main` (Configuración del Sistema)
+| Colección / Ruta | Tipo | Badges de Arquitectura | Rol de Acceso | Propósito y Función Crítica |
+| :--- | :--- | :--- | :--- | :--- |
+| `/global_config/main` | Raíz | `[Spark $0.00 Cost Guard]` `[Real-Time Cache]` | Público / Lectura | Tasas oficiales BCV, paralelo, reposición pesimista y estrategias de cálculo. |
+| `/activity_log/{log_id}` | Raíz | `[Zero Stack Traces]` `[TTL 30 Days]` | `super_admin` `admin` `owner` | Bitácora de auditoría inmutable del sistema (logins, fallos de seguridad, bloqueos). |
+| `/notifications/{notif_id}` | Raíz | `[Event-Driven]` `[Read-By Array]` | Todos los Roles | Avisos de stock crítico, cambios bruscos de tasa y contrataciones de personal. |
+| `/users/{user_id}` | Raíz | `[Hybrid: Owner/Worker]` `[2FA Challenge]` | Propietario UID / Admin | Cuenta híbrida de usuario, perfil personal, suscripción y dispositivos confiables. |
+| `/businesses/{business_id}` | Raíz | `[Multi-Tenant Scoped]` `[Snapshot Pattern]` | `owner` (Propiedad) / Staff | Entorno ERP del comercio, datos fiscales, balances acumulados y configuración. |
+| `.../workspaces/{biz_id}` | Subcolección | `[Hybrid: Owner/Worker]` `[Display Cache]` | Usuario UID | Negocios vinculados al usuario, clasificados en **Mis Propiedades** o **Colaboraciones**. |
+| `.../staff/{user_id}` | Subcolección | `[Bilateral Reputation]` `[Claims Scoped]` | `owner` / `manager` | Nómina activa de colaboradores en un negocio, roles asignados y turnos. |
+| `.../roles/{role_id}` | Subcolección | `[Custom RBAC]` `[Immutable Owner]` | `owner` | Definición de roles propios del negocio (Cajero, Almacenista, Auditor, Gerente). |
+| `.../categories/{cat_id}` | Subcolección | `[Catalog Structure]` | `owner` `worker` | Clasificación de inventario (Alimentos, Ferretería, Farmacia, Servicios). |
+| `.../warehouses/{wh_id}` | Subcolección | `[Multi-Depository]` | `owner` `inventory` | Almacenes físicos y depósitos sucursales para control de existencias. |
+| `.../products/{prod_id}` | Subcolección | `[Bi-Monetary Pricing]` `[Search Keywords]` | `owner` `worker` | Ficha técnica de producto, códigos de barra, stock total y márgenes comerciales. |
+| `.../inventory_lots/{lot_id}`| Subcolección | `[FIFO Traceability]` `[Expiration Alert]` | `owner` `inventory` | Trazabilidad por lote de compra, fecha de vencimiento y costo de reposición. |
+| `.../sales/{sale_id}` | Subcolección | `[Immutable Fiscal Snapshot]` `[POS]` | `owner` `cashier` | Registro congelado de la venta, desglose multi-moneda, vuelto y tributos. |
+| `.../cash_shifts/{shift_id}` | Subcolección | `[Blind Cash Count]` `[Cash Shift]` | `owner` `cashier` | Control de apertura y cierre ciego de caja registradora para evitar hurtos. |
+| `.../purchases/{purch_id}` | Subcolección | `[Auto Cost Update]` | `owner` `admin` | Compras a proveedores, recepción de mercancía y actualización de costo promedio. |
+| `.../customers/{cust_id}` | Subcolección | `[Credit Ledger (Fiado)]` | `owner` `cashier` | Directorio de clientes con cuenta corriente y límite de crédito comercial. |
+| `.../suppliers/{supp_id}` | Subcolección | `[Accounts Payable]` `[Risk Profile]` | `owner` `purchases` | Proveedores registrados, deuda pendiente en divisas y términos de reposición. |
+| `.../expenses/{exp_id}` | Subcolección | `[Overhead Tracking]` | `owner` `manager` | Egresos operativos (pago de nómina, alquiler, servicios públicos, mantenimiento). |
+| `.../sequences/{seq_id}` | Subcolección | `[Atomic Transaction]` `[Fiscal Sequence]` | Cloud Function / POS | Contadores atómicos con prefijo y padding para facturas fiscales (`FAC-001050`). |
+| `.../credit_notes/{note_id}` | Subcolección | `[Return Voucher]` | `owner` `cashier` | Notas de crédito emitidas para devoluciones sin alterar ventas originales. |
+
+---
+
+## 4. Reingeniería Crítica: `users/{user_id}/workspaces/{business_id}`
+
+### 4.1. Diagnóstico del Modelo Legacy (Riesgos Detectados)
+En la especificación anterior, `workspaces` se modelaba como un mapa plano simple dentro del documento raíz del usuario:
+```text
+users/{user_id}
+  └── workspaces (Map)
+       └── {business_id}: { role: "owner", status: "active", permissions_hash: "hash" }
+```
+**Peligros Identificados:**
+1. **Límite de 1 MB de Firestore:** Si un usuario colabora en 20-50 comercios a lo largo del tiempo, el documento del usuario se sobrecarga, incrementando el consumo de red en cada login.
+2. **Problema de Lecturas N+1 (Agotamiento de Cuota Spark):** Con solo almacenar el ID y el rol, la pantalla principal (*Workspace Hub*) debía hacer `N` lecturas individuales a la colección `businesses` para obtener el nombre, logo y categoría de cada negocio. 10 negocios = 11 lecturas por cada inicio de sesión.
+3. **Ausencia de Separación Híbrida:** No existía discriminación entre negocios propios y negocios donde se es empleado, forzando a la UI a deducir el rol mediante condicionales lentos.
+
+### 4.2. Estructura Evolucionada B.U.C.A. AI
+Se evoluciona a un modelo optimizado con **Caché Desnormalizada de Visualización** y soporte nativo para la identidad **`[OWNER] | [WORKER]`**:
+
+```text
+📂 users/{user_id}/workspaces/{business_id}
+├── 🔤 membership_type: "owner" | "worker"                   # 'owner' (Mis Propiedades) | 'worker' (Mis Colaboraciones)
+├── 🔤 role: "owner" | "manager" | "cashier" | "inventory"   # Rol específico dentro del comercio
+├── 🔤 status: "active" | "suspended" | "pending_invitation" # Estado de la vinculación
+│
+├── 📦 display_cache                                         # Caché para renderizar en 0ms sin lecturas extra
+│    ├── 🔤 business_name: "Inversiones Mega Center C.A."    # Razón social
+│    ├── 🔤 commercial_name: "Mega Center"                   # Nombre comercial
+│    ├── 🔤 logo_url: "https://firebasestorage.../logo.webp" # Logo optimizado
+│    ├── 🔤 category: "retail"                               # Rubro comercial
+│    ├── 🔤 location: "Valencia, Carabobo"                   # Ciudad / Estado
+│    └── 🔤 currency_base: "USD"                             # Moneda base del negocio
+│
+├── 💠 claims: ["pos:sell", "pos:discount", "cash:shift"]    # Permisos granulares listos para evaluar en cliente
+├── ⚖️ device_restricted: true                               # Requiere conectarse desde dispositivo aprobado por el negocio
+├── 🔢 reputation_score: 4.9                                 # Calificación bilateral acumulada del usuario
+├── 🔗 invited_by: "uid_dueno_negocio"                       # Quién extendió la contratación
+├── 🕒 joined_at: TIMESTAMP                                  # Fecha de ingreso
+└── 🕒 last_accessed_at: TIMESTAMP                           # Para ordenar comercios recientes en el Dock
+```
+
+> **Beneficio de Ingeniería:** Con esta caché integrada, el arranque de la aplicación realiza **1 sola lectura** para listar todas las propiedades y colaboraciones en el carrusel de negocios con datos visuales completos, reduciendo el consumo de cuota de Firestore en más de un **85%**.
+
+---
+
+## 5. Diccionario de Datos Exhaustivo
+
+### 5.1. `/global_config/main` (Configuración Maestra)
 * **`rates` (Map):**
   * `usd` (Number): Tasa oficial BCV en Bolívares (ej. `382.63`).
   * `eur` (Number): Tasa oficial Euro en Bolívares.
-  * `binance_usdt` (Number): Tasa de referencia USDT P2P.
-  * `pessimistic_replacement_rate_max` (Number): Tasa de reposición preventiva para proteger el inventario ante saltos cambiarios.
-  * `calculationStrategy` (String): `'SMART'` (usa brecha cambiaria) o `'STRICT'` (solo oficial).
-  * `updated_at` (Timestamp): Última fecha de sincronización automática.
+  * `binance_usdt` (Number): Tasa de mercado de referencia P2P.
+  * `pessimistic_replacement_rate_max` (Number): Tasa techo para evitar descapitalización de inventario.
+  * `calculationStrategy` (String): `'SMART'` (usa dispersión de brecha) o `'STRICT'` (solo BCV).
+  * `updated_at` (Timestamp): Fecha de sincronización de la Cloud Function.
+* **`plans_catalog` (Map):**
+  * `{plan_id}` (Map): Nombre del plan (`Free`, `Silver`, `Gold`), precio mensual en USD y límites de sucursales permitidas.
 
 ---
 
-### 3.2. Colección `/users/{user_id}` (Usuarios y Cuentas Híbridas)
+### 5.2. `/activity_log/{log_id}` (Auditoría Inmutable)
+* `type` (String): `'LOGIN_SUCCESS'`, `'LOGIN_FAILED_2FA'`, `'DEVICE_BLOCKED'`, `'CASH_DISCREPANCY'`, `'STOCK_OVERRIDE'`.
+* `severity` (String): `'LOW'`, `'MEDIUM'`, `'HIGH'`, `'CRITICAL'`.
+* `action` (String): Nombre del evento ejecutado.
+* `user_id` (String): Identificador del usuario emisor.
+* `business_id` (String / Null): ID del negocio donde ocurrió el evento (si aplica).
+* `details` (Map): Metadatos del dispositivo (`deviceType`, `ip_address`, `userAgent`, `platform`).
+* `message` (String): Resumen legible del suceso.
+* `timestamp` (Timestamp): Hora exacta en UTC.
+* `expires_at` (Timestamp): Configurado automáticamente a **30 días** para purga por TTL de Firestore.
+
+---
+
+### 5.3. `/users/{user_id}` (Cuenta y Seguridad de Usuario)
 * **`profile` (Map):**
-  * `username` (String): Alias único de usuario.
-  * `role` (String): Rol global en la plataforma (`super_admin`, `admin`, `owner`).
+  * `username` (String): Alias único para acceso e inicio de sesión.
+  * `role` (String): Rol de plataforma global (`super_admin`, `admin`, `owner`).
   * `firstName`, `lastName` (String): Nombre y apellido del titular.
-  * `mail` (String): Correo electrónico verificado.
-  * `phone` (String): Teléfono internacional.
-  * `avatar_url` (String): URL de imagen de perfil en Firebase Storage.
+  * `mail` (String): Correo electrónico principal.
+  * `phone` (String): Teléfono internacional de contacto.
+  * `avatar_url` (String): Imagen de perfil en WebP.
 * **`subscription_master` (Map):**
   * `plan_tier` (String): `'free'`, `'silver'`, `'gold'`.
-  * `max_businesses` (Number): Límite de negocios propios según el plan activo.
+  * `max_businesses` (Number): Límite de negocios propios creados (`Free: 1`, `Silver: 3`, `Gold: 10`).
   * `status` (String): `'active'`, `'past_due'`, `'canceled'`.
-* **`workspaces` (Map de Negocios Afiliados):**
-  * `{business_id}` (Map):
-    * `role` (String): Rol en el negocio específico (`owner`, `manager`, `cashier`, `inventory`).
-    * `status` (String): `'active'`, `'suspended'`.
-    * `permissions_hash` (String): Hash SHA-256 de permisos y claims autorizados.
+  * `valid_until` (Timestamp): Vencimiento del periodo activo.
+* **`security` (Map):**
+  * `2fa_enabled` (Boolean): Segundo factor de autenticación obligatorio.
+  * `2fa_method` (String): `'email'` (EmailJS) o `'app'` (Authenticator TOTP).
+  * `recovery_email` (String): Correo de respaldo alternativo.
+  * `challenge` (Map): Código temporal de 6 dígitos con expiración de 10 minutos para autorizar nuevos dispositivos.
 * **`trusted_devices` (Map):**
-  * `{device_id}` (Map): Huella digital del navegador (`fingerprint`), nombre descriptivo (`"PC Caja 1"`), IP reciente y estado de aprobación (`approved` / `pending`).
+  * `{device_id}` (Map):
+    * `name` (String): Nombre amigable asignado por el usuario (ej. *"Caja Principal"*).
+    * `fingerprint` (String): Hash SHA-256 generado por el navegador.
+    * `status` (String): `'approved'`, `'pending'`, `'revoked'`.
+    * `last_seen` (Timestamp): Última fecha de conexión.
 
 ---
 
-### 3.3. Colección `/businesses/{business_id}` (Unidades de Negocio ERP)
+### 5.4. `/businesses/{business_id}` (Unidad de Negocio ERP)
 * **`info` (Map):**
-  * `name` (String): Razón social registrada.
-  * `commercial_name` (String): Nombre comercial visible.
-  * `rif` (String): Registro de Información Fiscal (ej. `J-12345678-9`).
-  * `email`, `phone` (String): Datos de contacto de la sede.
+  * `name` (String): Razón social jurídica.
+  * `commercial_name` (String): Nombre comercial del local.
+  * `rif` (String): Cédula jurídica o RIF (ej. `J-12345678-9`).
   * `category` (String): `'retail'`, `'food'`, `'services'`, `'wholesale'`.
-  * `owner_id` (String): UUID del usuario creador (Owner soberano).
+  * `owner_id` (String): UID del propietario soberano en la plataforma.
+* **`config` (Map):**
+  * **`currencies` (Map):** `base` (`"USD"` para valoración contable), `transaction` (`"VES"` para cobro POS).
+  * **`taxes` (Map):**
+    * `iva_apply` (Boolean), `iva_general` (Number, default `16`).
+    * `igtf_apply` (Boolean), `igtf_general` (Number, default `3`).
+    * `igtf_manual_override` (Boolean): Si es `true`, el comercio absorbe el 3% en divisas sin trasladarlo al cliente.
+  * **`payment_methods` (Map):**
+    * `{method_id}`: Configuración individual de métodos de pago (`cash`, `pago_movil`, `pos_debit`, `zelle`, `usdt`), indicando tasa aplicada (`"bcv"` o `"base"`) y porcentaje de recargo bancario (`surcharge_percent`).
 * **`stats_accumulated` (Map de Contadores):**
-  * `total_sales_count` (Number): Cantidad total histórica de transacciones.
-  * `total_sales_usd` (Number): Facturación histórica acumulada en Dólares.
-  * `total_sales_ves` (Number): Facturación histórica acumulada en Bolívares.
+  * `total_sales_count` (Number): Nro total de facturas emitidas.
+  * `total_sales_usd` (Number): Facturación acumulada en USD.
+  * `total_sales_ves` (Number): Facturación acumulada en Bolívares.
+* **`stats_today` (Map de Snapshot Diario):**
+  * `date` (String): Fecha del snapshot (ej. `"2026-10-29"`).
+  * `sales_count` (Number): Ventas del día actual.
+  * `sales_usd` (Number): Facturación del día actual en USD.
 
 ---
 
-## 4. Subcolecciones Operativas de Negocio (`/businesses/{business_id}/...`)
+### 5.5. Subcolecciones Detalladas de Negocio
 
-1. **`products` (`/products/{product_id}`):**
-   * `sku` (String), `barcode` (String), `name` (String), `category_id` (String).
-   * `price_usd` (Number): Precio base fijado en moneda dura.
-   * `cost_usd` (Number): Costo de adquisición unitario.
-   * `stock_total` (Number): Sumatoria de existencias en todos los almacenes.
-   * `min_stock_alert` (Number): Umbral para disparar alerta de desabastecimiento.
-2. **`sales` (`/sales/{sale_id}`):**
-   * `invoice_number` (String), `customer_id` (String), `cashier_id` (String).
-   * `items` (Array de Maps): Lista de productos vendidos, cantidades y precios congelados al momento de la venta.
-   * `rate_applied` (Number): Tasa de cambio exacta utilizada en la transacción.
-   * `total_usd`, `total_ves` (Number): Montos bi-monetarios totales.
-   * `payment_methods` (Array): Detalle de cobro (Efectivo USD, Punto de Venta VES, Pago Móvil, Zelle, USDT).
-3. **`cash_shifts` (`/cash_shifts/{shift_id}`):**
-   * Control de apertura y cierre de caja: monto inicial en caja, ventas en efectivo por moneda, retiros parciales y arqueo ciego final para evitar hurtos o discrepancias.
-4. **`warehouses` (`/warehouses/{warehouse_id}`):**
-   * Ubicaciones físicas o depósitos con stock desglosado por lote y vencimiento.
+#### 1. `/products/{product_id}`
+* `sku` (String): Código interno de inventario.
+* `barcode` (String): Código EAN-13 o UPC escaneable.
+* `name` (String), `name_lowercase` (String para indexación de búsqueda).
+* `category_id` (String): ID de categoría asociada.
+* `isActive` (Boolean), `isFeatured` (Boolean).
+* `search_keywords` (Array de Strings): Lista de términos tokenizados para búsqueda instantánea en cliente.
+* `images` (Array de Maps): URLs en WebP y flag `isCover: true`.
+* **`pricing` (Map Bi-Monetario):**
+  * `cost_average` (Number): Costo ponderado según compras históricas.
+  * `cost_replacement` (Number): Costo de reposición más reciente del proveedor.
+  * `price_usd` (Number): Precio de venta fijado en moneda dura.
+  * `margin_percent` (Number): Margen comercial calculado.
+* **`stock` (Map Multi-Almacén):**
+  * `total` (Number): Suma total de existencias en el negocio.
+  * `min_alert` (Number): Umbral para disparar alerta visual de reposición.
+  * `breakdown` (Map): Existencias por almacén `{ [warehouse_id]: number }`.
+
+#### 2. `/products/{product_id}/inventory_lots/{lot_id}` (Trazabilidad FIFO)
+* `lot_number` (String): Identificador del lote de fabricación.
+* `quantity_initial` (Number): Cantidad ingresada al recibir la compra.
+* `quantity_available` (Number): Saldo remanente del lote.
+* `cost_unit_usd` (Number): Costo unitario real de este lote.
+* `expiration_date` (Timestamp / Null): Fecha de vencimiento para alertas de merma.
+* `status` (String): `'available'`, `'depleted'`, `'expired'`.
+
+#### 3. `/sales/{sale_id}` (Ventas y Punto de Venta)
+* `invoice_number` (String): Consecutivo fiscal (ej. `"FAC-001051"`).
+* `invoice_date` (String): Fecha formateada ISO.
+* `status` (String): `'completed'`, `'voided'` (Anulada).
+* `cashier_id` (String): UID del colaborador que procesó la venta.
+* `shift_id` (String): Turno de caja activo al momento del cobro.
+* `customer_info` (Map): Snapshot inmutable del cliente (nombre, cédula/RIF, dirección).
+* `items` (Array de Maps): Copia congelada de cada producto vendido (`productId`, `name`, `quantity`, `price_unit_usd`, `cost_snapshot`, `tax_rate`).
+* `exchange_rate_snapshot` (Map): Tasa exacta aplicada en el ticket (ej. `45.50 Bs/$`).
+* `totals` (Map): `subtotal_usd`, `total_tax_usd`, `total_igtf_usd`, `total_final_usd`, `total_paid_ves`.
+* `payments` (Array de Maps): Desglose exacto de medios de pago recibidos (Efectivo, Pago Móvil con referencia bancaria, Zelle).
+* `change_given` (Map): Vuelto entregado, moneda y método de devolución.
+
+#### 4. `/cash_shifts/{shift_id}` (Arqueo Ciego de Caja)
+* `cashier_id` (String): Cajero responsable del turno.
+* `name` (String): Nombre amigable del turno (ej. *"Turno Mañana - Caja 1"*).
+* `status` (String): `'open'`, `'closed'`, `'flagged_discrepancy'`.
+* `opened_at` (Timestamp), `closed_at` (Timestamp).
+* `initial_cash_usd`, `initial_cash_ves` (Number): Fondo inicial de caja.
+* **`blind_count` (Map):** Montos contados físicamente por el cajero al cerrar sin conocer el total del sistema.
+* **`system_computed` (Map):** Montos que el sistema calculó según ventas registradas.
+* **`discrepancy` (Map):** Diferencia resultante en USD y Bolívares (`counted - computed`).
+* `approved_by` (String / Null): UID del supervisor u Owner que autorizó el arqueo en caso de diferencias.
+
+#### 5. `/customers/{client_id}` (Clientes y Cuenta Corriente)
+* `name` (String), `doc_id` (String - Cédula o RIF), `phone` (String), `email` (String).
+* **`credit_account` (Map de Fiado):**
+  * `balance_usd` (Number): Saldo pendiente adeudado por el cliente.
+  * `limit_usd` (Number): Límite máximo de crédito autorizado.
+  * `status` (String): `'active'`, `'blocked_overdue'`, `'suspended'`.
+
+#### 6. `/suppliers/{supplier_id}` (Proveedores)
+* `name` (String), `rif` (String), `contact` (String), `phone` (String).
+* **`balance` (Map):** `amount_owed_usd` (monto adeudado), `credit_limit` (línea de crédito).
+* **`risk_profile` (Map):** Moneda de facturación del proveedor y margen de reposición pesimista recomendado.
+
+#### 7. `/sequences/{sequence_id}` (Contadores Consecutivos)
+* `current_value` (Number): Último número entero emitido.
+* `prefix` (String): Prefijo fiscal (`"FAC-"`, `"NC-"`, `"TKT-"`).
+* `padding` (Number): Cantidad de ceros de relleno (`6` para formato `FAC-000001`).
+
+---
+
+## 6. Ideas Estratégicas y Prevención de Problemas Futuros
+
+### 6.1. ¿Por qué NO guardar preferencias de UI en Firestore?
+* **Regla:** Configuraciones puramente cosméticas (modo oscuro, densidad de tablas compacta/cómoda, columnas visibles o filtros temporales) **NUNCA deben guardarse en Firestore**.
+* **Motivo:** Generan escrituras y lecturas continuas que no aportan valor contable y agotan las 20,000 escrituras diarias del Plan Spark.
+* **Solución:** Persistirlas exclusivamente en `localStorage` del dispositivo del usuario a través de `StorageAdapter.js`.
+
+### 6.2. Sincronización Bilateral entre `users/workspaces` y `businesses/staff`
+* **Problema:** Si el Owner elimina a un empleado de `businesses/{biz_id}/staff/{usr_id}`, el negocio podría quedar huérfano en el panel del usuario en `users/{usr_id}/workspaces/{biz_id}`.
+* **Solución:**
+  1. Al cambiar el estado de un colaborador a `'suspended'` o `'removed'`, una Cloud Function dispara la actualización en cascada sobre el documento del usuario.
+  2. El enrutador SPA valida el claim en cliente; si el comercio figura revocado, se anula la entrada y se redirige con notificación amigable.
+
+### 6.3. Colección `devices`: Enfoque Híbrido Económico
+* En la documentación legacy se discutía crear una colección `/businesses/{biz_id}/devices`.
+* **Solución Recomendada:** Para ahorrar lecturas, la huella digital del dispositivo se verifica primero contra los `trusted_devices` del usuario en su propio documento (`users/{user_id}`). Solo comercios de alta seguridad (ej. joyerías o distribución mayorista) activan el flag `device_restricted: true`, requiriendo que el ID del dispositivo esté además presente en la lista blanca del negocio.
