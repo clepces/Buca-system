@@ -1,7 +1,7 @@
-# Esquema de Base de Datos Firestore v4.0.0 (B.U.C.A. AI)
+# Esquema de Base de Datos Firestore v4.1.0 (B.U.C.A. AI)
 
 > **Documento:** Estructura de Datos NoSQL, Colecciones, Subcolecciones, Badges y Reglas de Optimización  
-> **Versión:** 4.0.0 (Master de Producción)  
+> **Versión:** 4.1.0 (Master de Producción - Arquitectura Híbrida)  
 > **Motor:** Google Cloud Firestore (Modo Nativo)  
 > **Filosofía de Arquitectura:** Resiliencia Anti-Crisis, Aislamiento Multi-Tenant y Coste Operativo $0.00 USD
 
@@ -47,6 +47,7 @@ erDiagram
     USERS {
         string user_id PK
         map profile
+        map worker_profile
         map subscription_master
         map workspaces
         map security
@@ -102,54 +103,137 @@ erDiagram
 | `.../sales/{sale_id}` | Subcolección | `[Immutable Fiscal Snapshot]` `[POS]` | `owner` `cashier` | Registro congelado de la venta, desglose multi-moneda, vuelto y tributos. |
 | `.../cash_shifts/{shift_id}` | Subcolección | `[Blind Cash Count]` `[Cash Shift]` | `owner` `cashier` | Control de apertura y cierre ciego de caja registradora para evitar hurtos. |
 | `.../purchases/{purch_id}` | Subcolección | `[Auto Cost Update]` | `owner` `admin` | Compras a proveedores, recepción de mercancía y actualización de costo promedio. |
-| `.../customers/{cust_id}` | Subcolección | `[Credit Ledger (Fiado)]` | `owner` `cashier` | Directorio de clientes con cuenta corriente y límite de crédito comercial. |
+| `.../customers/{cust_id}` | Subcolección | `[Credit Ledger (Fiado)]` | `owner` `cashier` | Directorio de clientes con cuenta corriente y límite de crédito comercial anclado en USD. |
 | `.../suppliers/{supp_id}` | Subcolección | `[Accounts Payable]` `[Risk Profile]` | `owner` `purchases` | Proveedores registrados, deuda pendiente en divisas y términos de reposición. |
 | `.../expenses/{exp_id}` | Subcolección | `[Overhead Tracking]` | `owner` `manager` | Egresos operativos (pago de nómina, alquiler, servicios públicos, mantenimiento). |
-| `.../sequences/{seq_id}` | Subcolección | `[Atomic Transaction]` `[Fiscal Sequence]` | Cloud Function / POS | Contadores atómicos con prefijo y padding para facturas fiscales (`FAC-001050`). |
+| `.../sequences/{seq_id}` | Subcolección | `[Atomic Transaction]` `[Fiscal Sequence]` | Cloud Function / POS | Contadores atómicos con prefijo y padding para facturas fiscales (`FAC-`, `NC-`, `TKT-`). |
 | `.../credit_notes/{note_id}` | Subcolección | `[Return Voucher]` | `owner` `cashier` | Notas de crédito emitidas para devoluciones sin alterar ventas originales. |
 
 ---
 
-## 4. Reingeniería Crítica: `users/{user_id}/workspaces/{business_id}`
+## 4. Reingenierías Críticas: Diagnóstico de Errores y Soluciones de Futuro
 
-### 4.1. Diagnóstico del Modelo Legacy (Riesgos Detectados)
-En la especificación anterior, `workspaces` se modelaba como un mapa plano simple dentro del documento raíz del usuario:
-```text
-users/{user_id}
-  └── workspaces (Map)
-       └── {business_id}: { role: "owner", status: "active", permissions_hash: "hash" }
-```
-**Peligros Identificados:**
-1. **Límite de 1 MB de Firestore:** Si un usuario colabora en 20-50 comercios a lo largo del tiempo, el documento del usuario se sobrecarga, incrementando el consumo de red en cada login.
-2. **Problema de Lecturas N+1 (Agotamiento de Cuota Spark):** Con solo almacenar el ID y el rol, la pantalla principal (*Workspace Hub*) debía hacer `N` lecturas individuales a la colección `businesses` para obtener el nombre, logo y categoría de cada negocio. 10 negocios = 11 lecturas por cada inicio de sesión.
-3. **Ausencia de Separación Híbrida:** No existía discriminación entre negocios propios y negocios donde se es empleado, forzando a la UI a deducir el rol mediante condicionales lentos.
+Esta sección detalla los problemas de arquitectura descubiertos en el análisis del sistema que habrían provocado colapso en producción, alto consumo de cuotas en Firebase o corrupción contable, junto con sus soluciones definitivas.
 
-### 4.2. Estructura Evolucionada B.U.C.A. AI
-Se evoluciona a un modelo optimizado con **Caché Desnormalizada de Visualización** y soporte nativo para la identidad **`[OWNER] | [WORKER]`**:
+---
 
+### 4.1. Reingeniería 1: `users/{user_id}/workspaces/{business_id}` y el Modelo Híbrido
+
+#### ⚠️ Problemas y Riesgos Detectados en el Modelo Legacy:
+1. **Límite de 1 MB de Firestore:** Guardar un mapa plano de negocios indefinido en la raíz del usuario sobrecarga el documento en perfiles con muchas colaboraciones históricas.
+2. **Agotamiento de Lecturas (Problema N+1):** Si solo se guardaba el ID y el rol, al iniciar sesión el frontend tenía que hacer `N` lecturas adicionales a `businesses/{biz_id}` solo para saber el nombre y logo de cada tarjeta del carrusel.
+3. **Falta de Separación Híbrida:** No había distinción clara entre lo que el usuario posee como dueño y los comercios donde presta servicios como empleado.
+
+#### 🚀 Estructura Evolucionada en B.U.C.A. AI v4.1.0:
 ```text
 📂 users/{user_id}/workspaces/{business_id}
-├── 🔤 membership_type: "owner" | "worker"                   # 'owner' (Mis Propiedades) | 'worker' (Mis Colaboraciones)
-├── 🔤 role: "owner" | "manager" | "cashier" | "inventory"   # Rol específico dentro del comercio
-├── 🔤 status: "active" | "suspended" | "pending_invitation" # Estado de la vinculación
+├── 🔤 membership_type: "owner" | "worker"                   # Divide 'Mis Propiedades' vs 'Mis Colaboraciones'
+├── 🔤 role: "owner" | "manager" | "cashier" | "inventory"   # Puesto de trabajo
+├── 🔤 status: "active" | "suspended"
 │
-├── 📦 display_cache                                         # Caché para renderizar en 0ms sin lecturas extra
-│    ├── 🔤 business_name: "Inversiones Mega Center C.A."    # Razón social
-│    ├── 🔤 commercial_name: "Mega Center"                   # Nombre comercial
-│    ├── 🔤 logo_url: "https://firebasestorage.../logo.webp" # Logo optimizado
-│    ├── 🔤 category: "retail"                               # Rubro comercial
-│    ├── 🔤 location: "Valencia, Carabobo"                   # Ciudad / Estado
-│    └── 🔤 currency_base: "USD"                             # Moneda base del negocio
+├── 📦 display_cache                                         # 💡 CACHÉ PARA RENDERIZAR EN 0ms
+│    ├── 🔤 business_name: "Inversiones Mega Center C.A."
+│    ├── 🔤 commercial_name: "Mega Center"
+│    ├── 🔤 logo_url: "https://.../logo.webp"
+│    ├── 🔤 category: "retail"
+│    ├── 🔤 location: "Valencia, Carabobo"
+│    └── 🔤 currency_base: "USD"
 │
-├── 💠 claims: ["pos:sell", "pos:discount", "cash:shift"]    # Permisos granulares listos para evaluar en cliente
-├── ⚖️ device_restricted: true                               # Requiere conectarse desde dispositivo aprobado por el negocio
-├── 🔢 reputation_score: 4.9                                 # Calificación bilateral acumulada del usuario
-├── 🔗 invited_by: "uid_dueno_negocio"                       # Quién extendió la contratación
-├── 🕒 joined_at: TIMESTAMP                                  # Fecha de ingreso
-└── 🕒 last_accessed_at: TIMESTAMP                           # Para ordenar comercios recientes en el Dock
+├── 💠 claims: ["pos:sell", "pos:discount", "cash:shift"]    # Permisos granulares listos para el cliente
+├── ⚖️ device_restricted: true                               # Exige conectarse desde PC/móvil autorizado
+├── 🔢 reputation_score: 4.9                                 # Reputación bilateral acumulada
+├── 🔗 invited_by: "uid_owner"                               # Trazabilidad de contratación
+├── 🕒 joined_at: TIMESTAMP
+└── 🕒 last_accessed_at: TIMESTAMP                           # Para ordenar recientes en el Dock
 ```
 
-> **Beneficio de Ingeniería:** Con esta caché integrada, el arranque de la aplicación realiza **1 sola lectura** para listar todas las propiedades y colaboraciones en el carrusel de negocios con datos visuales completos, reduciendo el consumo de cuota de Firestore en más de un **85%**.
+---
+
+### 4.2. Reingeniería 2: Tratamiento del Rol `[Worker]` en `users/{user_id}`
+
+#### ❓ El Dilema Arquitectónico:
+¿Debe agregarse `role: "worker"` dentro del mapa `profile` o en `subscription_master` de la colección `users/{user_id}`?
+
+#### 💡 Solución Canónica B.U.C.A. AI:
+En nuestra filosofía de libertad económica, **un usuario nunca es degradado a un rol fijo**. Todos los usuarios registrados tienen una **Cuenta Híbrida Dual** capaz de operar como Owner y como Worker simultáneamente:
+
+1. **En `profile`:**
+   * `platform_role`: Define únicamente el nivel de sistema (`'super_admin'`, `'admin'`, `'user'`).
+   * `active_mode`: Almacena el interruptor visual activo de la interfaz (`'owner'` para Mis Propiedades, `'worker'` para Mis Colaboraciones).
+2. **Nuevo Mapa `worker_profile` (El Perfil Laboral del Usuario):**
+   Para permitir que el usuario sea contratado en el ecosistema, se crea un mapa específico para su faceta de trabajador:
+   ```text
+   📦 worker_profile
+   ├── 💠 skills: ["pos_cashier", "inventory_auditor", "sales_expert"]
+   ├── 🔤 job_title: "Cajero Principal y Operador POS"
+   ├── 🔤 bio: "3 años de experiencia en manejo de caja bi-monetaria y arqueo ciego."
+   ├── 🔤 availability_status: "available" | "busy" | "not_disturb"
+   ├── 🔢 reputation_score: 4.88           # Promedio de calificaciones de Owners
+   └── 🔢 total_shifts_completed: 142     # Conteo de turnos exitosos
+   ```
+3. **¿Cómo afecta a `subscription_master`?**
+   * El plan de suscripción (`Free`, `Silver`, `Gold`) **aplica únicamente a la faceta de Owner** (determina cuántas empresas propias puede crear).
+   * **La faceta de Worker es 100% gratuita e ilimitada de por vida.** Un trabajador puede ser contratado en 100 negocios distintos sin pagar suscripción alguna.
+4. **¿Cómo afecta a `security` y `trusted_devices`?**
+   * Aplican globalmente para proteger el inicio de sesión del usuario.
+   * Si un negocio ajeno tiene activada la política `device_restricted: true`, el trabajador solo podrá ingresar a ese negocio específico si su huella digital coincide con un dispositivo previamente autorizado por el dueño de dicho negocio.
+
+---
+
+### 4.3. Reingeniería 3: Anclaje de Deuda Multi-Moneda en `customers.credit_account` (El "Fiado")
+
+#### ⚠️ Problema Crítico:
+En economías de alta inflación, registrar una deuda de cuenta corriente ("fiado") en moneda local (VES) provoca que en pocas semanas el dinero cobrado no cubra ni una fracción del costo del producto, causando la quiebra silenciosa del comercio.
+
+#### 🚀 Solución:
+Toda cuenta corriente se ancla estrictamente en **Dólares ($ USD)** en el campo `balance_usd`:
+* Al momento de abonar o cancelar la deuda, el sistema multiplica el `balance_usd` por la tasa oficial BCV del día exacto del cobro.
+* De este modo, el negocio conserva íntegro su poder adquisitivo y su capital de trabajo sin vulnerar el marco legal cambiario.
+
+---
+
+### 4.4. Reingeniería 4: Inmutabilidad Fiscal Absoluta en `sales`
+
+#### ⚠️ Problema Crítico:
+Si un documento de venta solo almacena el `productId` y consulta el precio o costo en la colección de productos al generar un reporte, cualquier actualización posterior de precios o costos corromperá retroactivamente las ganancias y balances de ventas del año pasado.
+
+#### 🚀 Solución:
+Cada documento en `/sales/{sale_id}` almacena un **Snapshot Inmutable Completo** dentro de su array `items`:
+* Nombre del producto al momento de la venta.
+* Precio unitario de venta congelado (`price_unit_usd`).
+* Costo real de adquisición del lote en ese segundo (`cost_snapshot`).
+* Tasa de cambio oficial aplicada en ese instante (`rate_applied`).
+* Porcentaje de IVA e IGTF vigentes en ese ticket.
+
+---
+
+### 4.5. Reingeniería 5: Concurrencia en Consecutivos Fiscales (`sequences`)
+
+#### ⚠️ Problema Crítico:
+Si dos cajas en una tienda cobran simultáneamente a las 12:00:00 y leen el contador de facturas mediante lecturas estándar (`getDoc`), ambas recibirán el número 1050 y emitirán dos facturas distintas con el mismo consecutivo fiscal (`FAC-001050`), generando una grave falta legal y tributaria.
+
+#### 🚀 Solución:
+Uso estricto de transacciones atómicas (`runTransaction` en Firebase Cloud Functions):
+```javascript
+await db.runTransaction(async (transaction) => {
+    const seqDoc = await transaction.get(seqRef);
+    const nextVal = seqDoc.data().current_value + 1;
+    transaction.update(seqRef, { current_value: nextVal });
+    return `${prefix}${String(nextVal).padStart(padding, '0')}`;
+});
+```
+
+---
+
+### 4.6. Reingeniería 6: Trazabilidad FIFO por Lotes (`inventory_lots`)
+
+#### ⚠️ Problema Crítico:
+Manejar un stock numérico simple (`stock: 50`) impide saber cuáles productos caducan primero en rubros como alimentos, bebidas o farmacia, provocando pérdidas por vencimiento de mercancía.
+
+#### 🚀 Solución:
+Subcolección `/products/{product_id}/inventory_lots/{lot_id}`:
+* Cada compra entrante crea un lote con su fecha de vencimiento (`expiration_date`) y costo unitario real.
+* El Punto de Venta descuenta inventario siguiendo la regla **PEPS (Primeras en Entrar, Primeras en Salir)**, alertando visualmente en el HUD si un lote está a 15 días de expirar.
 
 ---
 
@@ -184,12 +268,20 @@ Se evoluciona a un modelo optimizado con **Caché Desnormalizada de Visualizaci�
 ### 5.3. `/users/{user_id}` (Cuenta y Seguridad de Usuario)
 * **`profile` (Map):**
   * `username` (String): Alias único para acceso e inicio de sesión.
-  * `role` (String): Rol de plataforma global (`super_admin`, `admin`, `owner`).
+  * `platform_role` (String): Rol de plataforma global (`super_admin`, `admin`, `user`).
+  * `active_mode` (String): Modo activo en interfaz (`owner` | `worker`).
   * `firstName`, `lastName` (String): Nombre y apellido del titular.
   * `mail` (String): Correo electrónico principal.
   * `phone` (String): Teléfono internacional de contacto.
   * `avatar_url` (String): Imagen de perfil en WebP.
-* **`subscription_master` (Map):**
+* **`worker_profile` (Map de Talento Laboral):**
+  * `skills` (Array de Strings): Habilidades certificadas (`pos_cashier`, `inventory`, `sales`).
+  * `job_title` (String): Título profesional declarado.
+  * `bio` (String): Resumen de perfil y experiencia.
+  * `availability_status` (String): `'available'`, `'busy'`, `'not_disturb'`.
+  * `reputation_score` (Number): Promedio acumulado de calificaciones recibidas.
+  * `total_shifts_completed` (Number): Total de turnos laborales finalizados.
+* **`subscription_master` (Map de Planes - Exclusivo para Owner):**
   * `plan_tier` (String): `'free'`, `'silver'`, `'gold'`.
   * `max_businesses` (Number): Límite de negocios propios creados (`Free: 1`, `Silver: 3`, `Gold: 10`).
   * `status` (String): `'active'`, `'past_due'`, `'canceled'`.
@@ -202,7 +294,7 @@ Se evoluciona a un modelo optimizado con **Caché Desnormalizada de Visualizaci�
 * **`trusted_devices` (Map):**
   * `{device_id}` (Map):
     * `name` (String): Nombre amigable asignado por el usuario (ej. *"Caja Principal"*).
-    * `fingerprint` (String): Hash SHA-256 generado por el navegador.
+    * `fingerprint` (String): Hash SHA-256 de 64 caracteres generado por el navegador.
     * `status` (String): `'approved'`, `'pending'`, `'revoked'`.
     * `last_seen` (Timestamp): Última fecha de conexión.
 
@@ -288,8 +380,8 @@ Se evoluciona a un modelo optimizado con **Caché Desnormalizada de Visualizaci�
 
 #### 5. `/customers/{client_id}` (Clientes y Cuenta Corriente)
 * `name` (String), `doc_id` (String - Cédula o RIF), `phone` (String), `email` (String).
-* **`credit_account` (Map de Fiado):**
-  * `balance_usd` (Number): Saldo pendiente adeudado por el cliente.
+* **`credit_account` (Map de Fiado Anclado en USD):**
+  * `balance_usd` (Number): Saldo pendiente adeudado por el cliente anclado en moneda dura.
   * `limit_usd` (Number): Límite máximo de crédito autorizado.
   * `status` (String): `'active'`, `'blocked_overdue'`, `'suspended'`.
 
@@ -298,10 +390,14 @@ Se evoluciona a un modelo optimizado con **Caché Desnormalizada de Visualizaci�
 * **`balance` (Map):** `amount_owed_usd` (monto adeudado), `credit_limit` (línea de crédito).
 * **`risk_profile` (Map):** Moneda de facturación del proveedor y margen de reposición pesimista recomendado.
 
-#### 7. `/sequences/{sequence_id}` (Contadores Consecutivos)
+#### 7. `/sequences/{sequence_id}` (Contadores Consecutivos Fiscales)
+Controla la numeración obligatoria y consecutiva de comprobantes comerciales:
 * `current_value` (Number): Último número entero emitido.
-* `prefix` (String): Prefijo fiscal (`"FAC-"`, `"NC-"`, `"TKT-"`).
-* `padding` (Number): Cantidad de ceros de relleno (`6` para formato `FAC-000001`).
+* `prefix` (String): **Prefijo de identificación del tipo de documento fiscal:**
+  * **`"FAC-"` (Factura Fiscal):** Comprobante fiscal formal con validez tributaria ante el SENIAT.
+  * **`"NC-"` (Nota de Crédito):** Documento fiscal de devolución, anulación o reintegro que corrige una factura previa sin eliminarla del libro de ventas.
+  * **`"TKT-"` (Ticket de Mostrador / Despacho):** Comprobante simplificado no fiscal para ventas rápidas de mostrador o comandas internas.
+* `padding` (Number): Cantidad de ceros de relleno (`6` dígitos: ej. `FAC-000001`, `NC-000050`, `TKT-001240`).
 
 ---
 

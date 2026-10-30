@@ -49,7 +49,7 @@ buca-system/
 │   ├── structure.md               # Árbol maestro y reglas de código
 │   ├── api.md                     # Contratos de red y servicios externos
 │   ├── components.md              # Catálogo de componentes visuales modulares
-│   ├── database.md                # Esquema Firestore v4.0.0 y colecciones
+│   ├── database.md                # Esquema Firestore v4.1.0 y colecciones
 │   ├── domain-logic.md            # Reglas de negocio bi-monetarias y de inventario
 │   ├── events.md                  # Especificación del Bus de Eventos Pub/Sub
 │   ├── interface.md               # Diseño Glassmorphism, SASS y correcciones responsivas
