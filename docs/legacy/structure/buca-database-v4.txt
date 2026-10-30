@@ -192,9 +192,9 @@ NOTA: Esta estructura es MANDATORIA. No omitir ningún campo.
     📂 users/
     │   
     │    ; DATOS DE DEMOS 
-    │    ; Ej: admin@buca.com.ve        - clave: admin123 - rol: super_admin - id: iYRAvDtGUmShQcC26WJROj98NuJ3 
-    │    ; Ej: asicodia@gmail.com       - clave: admin123 - rol: admin       - id: 2RrxwawhGWQwoS5R8q4RmnPLcmr2
-    │    ; Ej: elexdy.publice@gmail.com - clave: owner123 - rol: owner       - id: QakiVsA6IJQ7gP9oaCDMT1qRsnT2  
+    │    ; Ej: admin@buca.com.ve        - clave: admin123 - rol: super_admin - id: nhWRyJPvuMUtiOYpCDAa7BwkNOx1 
+    │    ; Ej: asicodia@gmail.com       - clave: soporte123 - rol: admin     - id: QmojtAorrSORnIR652B2OQrLFnV2
+    │    ; Ej: elexdy.publice@gmail.com - clave: owner123 - rol: owner       - id: rztfsvfopefrflIa6natw4tHFMh2  
     │
     └── 📄 {user_id}   
         │
